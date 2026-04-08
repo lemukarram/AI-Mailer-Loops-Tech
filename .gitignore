@@ -1,0 +1,32 @@
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+
+# User Uploads
+# We ignore the contents but keep the directory via a .gitkeep if it exists
+uploads/*
+!uploads/.gitkeep
+
+# Logs and Temp
+*.log
+/tmp/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+/vendor/
+/node_modules/

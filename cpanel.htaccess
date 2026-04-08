@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # 1. Protect sensitive files and folders
+    RewriteRule ^(\.env|config|src|cron|database|tests|uploads) - [F,L]
+
+    # 2. If the request is already for the public folder, stop here
+    RewriteCond %{REQUEST_URI} ^/public/
+    RewriteRule ^ - [L]
+
+    # 3. Rewrite all other requests to the public folder
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

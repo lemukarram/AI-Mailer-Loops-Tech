@@ -1,11 +1,18 @@
-Options -Indexes
-RewriteEngine On
+<IfModule mod_rewrite.c>
+    # Try to disable directory listing without crashing on restricted hosts
+    <IfModule mod_autoindex.c>
+        Options -Indexes
+    </IfModule>
+    
+    RewriteEngine On
 
-# Ensure Authorization header is passed to PHP
-RewriteCond %{HTTP:Authorization} .
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    # Ensure Authorization header is passed to PHP
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-# Redirect to index.php if file/directory doesn't exist
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [L]
+    # Redirect to index.php if file/directory doesn't exist
+    # This must handle the /public prefix correctly if it's been rewritten
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>

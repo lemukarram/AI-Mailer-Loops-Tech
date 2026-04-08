@@ -12,7 +12,7 @@ class LLM {
         if ($model) {
             $this->model = $model;
         } else {
-            $this->model = ($provider === 'openai') ? 'gpt-4o' : 'gemini-1.5-pro';
+            $this->model = ($provider === 'openai') ? 'gpt-4o' : 'gemini-2.0-flash';
         }
     }
 

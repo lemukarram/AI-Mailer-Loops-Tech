@@ -37,8 +37,8 @@ $csrf_token = Auth::generateCSRFToken();
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
-        .sidebar { min-height: 100vh; background-color: #212529; color: #fff; padding: 20px; }
-        .main-content { padding: 30px; }
+        .sidebar { min-height: 100vh; background-color: #212529; color: #fff; padding: 20px; position: fixed; width: 200px; }
+        .main-content { margin-left: 200px; padding: 30px; }
         .nav-link { color: #adb5bd; }
         .nav-link:hover { color: #fff; }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
@@ -49,10 +49,11 @@ $csrf_token = Auth::generateCSRFToken();
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <nav class="col-md-2 d-none d-md-block sidebar">
+        <nav class="sidebar">
             <h4 class="mb-4">aiMailSaas</h4>
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link active" href="index.php">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="campaigns.php">Campaigns</a></li>
                 <li class="nav-item"><a class="nav-link" href="settings.php">Settings</a></li>
                 <?php if ($user_role === 'admin'): ?>
                     <li class="nav-item"><a class="nav-link" href="admin/users.php">Admin Panel</a></li>
@@ -62,7 +63,7 @@ $csrf_token = Auth::generateCSRFToken();
         </nav>
 
         <!-- Main -->
-        <main class="col-md-10 ms-sm-auto px-md-4 main-content">
+        <main class="main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_email']); ?></h2>
                 <div class="btn-group">
@@ -76,7 +77,7 @@ $csrf_token = Auth::generateCSRFToken();
             <?php if (isset($_GET['msg'])): ?>
                 <div class="alert alert-success alert-dismissible fade show">
                     <?php echo htmlspecialchars($_GET['msg']); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
@@ -103,9 +104,9 @@ $csrf_token = Auth::generateCSRFToken();
             </div>
 
             <!-- Table -->
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <table id="mailingTable" class="table table-hover">
+                    <table id="mailingTable" class="table table-hover w-100">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -148,31 +149,36 @@ $csrf_token = Auth::generateCSRFToken();
     </div>
 </div>
 
-<!-- AI View Modal -->
-<div class="modal fade" id="aiModal" tabindex="-1">
+<!-- AI/Manual Review Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">AI Generated Email</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Review & Send Email</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="current_contact_id">
                 <div class="mb-3">
+                    <label class="form-label fw-bold">Recipient</label>
+                    <input type="text" id="email_to" class="form-control bg-light" readonly>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-bold">Subject</label>
-                    <input type="text" id="ai_subject" class="form-control">
+                    <input type="text" id="email_subject" class="form-control">
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Body</label>
-                    <textarea id="ai_body" class="form-control" rows="10"></textarea>
+                    <textarea id="email_body" class="form-control" rows="12"></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Footer</label>
-                    <input type="text" id="ai_footer" class="form-control">
+                    <input type="text" id="email_footer" class="form-control">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button id="sendNowBtn" class="btn btn-success">Send Instantly</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="sendNowBtn" class="btn btn-success px-4">Send Email Now</button>
             </div>
         </div>
     </div>
@@ -202,7 +208,10 @@ $(document).ready(function() {
                 data: null,
                 render: function(data, type, row) {
                     return `
-                        <button class="btn btn-sm btn-info generate-ai-btn" data-id="${row.id}">AI Generate</button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-info generate-ai-btn" data-id="${row.id}">AI Gen</button>
+                            <button class="btn btn-primary review-manual-btn" data-id="${row.id}">Review</button>
+                        </div>
                     `;
                 }
             }
@@ -213,16 +222,38 @@ $(document).ready(function() {
     $(document).on('click', '.generate-ai-btn', function() {
         var id = $(this).data('id');
         var btn = $(this);
-        btn.prop('disabled', true).text('Generating...');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
         $.post('api/generate_ai.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).text('AI Generate');
+            btn.prop('disabled', false).text('AI Gen');
             if(res.success) {
                 $('#current_contact_id').val(id);
-                $('#ai_subject').val(res.data.subject);
-                $('#ai_body').val(res.data.body);
-                $('#ai_footer').val(res.data.footer);
-                $('#aiModal').modal('show');
+                $('#email_to').val(res.recipient);
+                $('#email_subject').val(res.data.subject);
+                $('#email_body').val(res.data.body);
+                $('#email_footer').val(res.data.footer);
+                $('#emailModal').modal('show');
+            } else {
+                alert(res.error);
+            }
+        }, 'json');
+    });
+
+    // Handle Manual Review (Prepare with Template)
+    $(document).on('click', '.review-manual-btn', function() {
+        var id = $(this).data('id');
+        var btn = $(this);
+        btn.prop('disabled', true);
+
+        $.post('api/prepare_template.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
+            btn.prop('disabled', false);
+            if(res.success) {
+                $('#current_contact_id').val(id);
+                $('#email_to').val(res.recipient);
+                $('#email_subject').val(res.subject);
+                $('#email_body').val(res.body);
+                $('#email_footer').val(res.footer);
+                $('#emailModal').modal('show');
             } else {
                 alert(res.error);
             }
@@ -232,17 +263,17 @@ $(document).ready(function() {
     // Handle Instant Send
     $('#sendNowBtn').on('click', function() {
         var id = $('#current_contact_id').val();
-        var subject = $('#ai_subject').val();
-        var body = $('#ai_body').val();
-        var footer = $('#ai_footer').val();
+        var subject = $('#email_subject').val();
+        var body = $('#email_body').val();
+        var footer = $('#email_footer').val();
         
-        $(this).prop('disabled', true).text('Sending...');
+        var btn = $(this);
+        btn.prop('disabled', true).text('Sending...');
 
         $.post('api/send_single.php', { id: id, subject: subject, body: body, footer: footer, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            $('#sendNowBtn').prop('disabled', false).text('Send Instantly');
+            btn.prop('disabled', false).text('Send Email Now');
             if(res.success) {
-                alert('Email sent successfully!');
-                $('#aiModal').modal('hide');
+                $('#emailModal').modal('hide');
                 table.ajax.reload();
             } else {
                 alert(res.error);
@@ -255,11 +286,7 @@ $(document).ready(function() {
         var btn = $(this);
         $.post('api/toggle_queue.php', { csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
             if(res.success) {
-                if(res.status === 'started') {
-                    btn.removeClass('btn-success').addClass('btn-danger').text('Stop Queue');
-                } else {
-                    btn.removeClass('btn-danger').addClass('btn-success').text('Start Queue');
-                }
+                location.reload();
             } else {
                 alert(res.error);
             }

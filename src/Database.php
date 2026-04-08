@@ -34,6 +34,9 @@ class Database {
     }
 
     public function getConnection() {
+        if ($this->conn === null) {
+            die("Database Connection Error: Please ensure your .env file is configured correctly and the database is accessible.");
+        }
         return $this->conn;
     }
 }

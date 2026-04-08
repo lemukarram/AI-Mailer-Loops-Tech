@@ -1,0 +1,20 @@
+# aiMailSaas Root .htaccess
+# Optimized for cPanel direct deployment
+
+<IfModule mod_rewrite.c>
+    # Try to disable directory listing
+    <IfModule mod_autoindex.c>
+        Options -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # 1. Protect core folders and sensitive files
+    # We explicitly deny access to these
+    RewriteRule ^(\.env|config|src|cron|database|tests|uploads|GEMINI\.md|README\.md|cpanel\.md|Dockerfile|docker-compose\.yml) - [F,L]
+
+    # 2. Redirect to index.php if file/directory doesn't exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>

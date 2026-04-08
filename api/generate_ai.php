@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../../src/Auth.php';
-require_once __DIR__ . '/../../src/Database.php';
-require_once __DIR__ . '/../../src/Campaign.php';
+require_once __DIR__ . '/../src/Auth.php';
+require_once __DIR__ . '/../src/Database.php';
+require_once __DIR__ . '/../src/Campaign.php';
 
 Auth::requireLogin();
 $user_id = Auth::getUserId();

@@ -51,7 +51,10 @@ $csrf_token = Auth::generateCSRFToken();
         </div>
         <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
-    <div class="mt-3 text-center small text-muted">
+    <div class="mt-3 text-center small">
+        Don't have an account? <a href="register.php">Register here</a>
+    </div>
+    <div class="mt-2 text-center small text-muted">
         Default Admin: <code>admin@example.com</code> / <code>admin_pass</code>
     </div>
 </div>

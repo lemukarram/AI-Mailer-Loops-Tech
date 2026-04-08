@@ -116,20 +116,23 @@ $csrf_token = Auth::generateCSRFToken();
                             <div class="mt-2 small text-muted">GPT-5 / Gemini 2.5 will use this context.</div>
                         </div>
                     </div>
-                    <div class="col-lg-6">
-                        <div class="p-4 bg-light rounded-4 border-0 h-100">
-                            <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-keyboard me-2"></i>Manual Templates</h6>
-                            <div class="mb-3">
-                                <label class="form-label small">Subject</label>
-                                <input type="text" name="subject_template" class="form-control" value="<?php echo htmlspecialchars($campaign['subject_template'] ?? ''); ?>">
+                            <div class="col-lg-6">
+                                <div class="p-4 bg-light rounded-4 border-0 h-100">
+                                    <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-keyboard me-2"></i>Manual Templates</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label small">Subject</label>
+                                        <input type="text" name="subject_template" class="form-control" value="<?php echo htmlspecialchars($campaign['subject_template'] ?? ''); ?>">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small">Body</label>
+                                        <textarea name="body_template" class="form-control" rows="4"><?php echo htmlspecialchars($campaign['body_template'] ?? ''); ?></textarea>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Available variables:<br>
+                                        <code>[contact_name]</code>, <code>[email]</code>, <code>[company]</code>, <code>[designation]</code>, <code>[company_type]</code>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small">Body</label>
-                                <textarea name="body_template" class="form-control" rows="4"><?php echo htmlspecialchars($campaign['body_template'] ?? ''); ?></textarea>
-                            </div>
-                            <div class="small text-muted">Use <code>[contact_name]</code>, <code>[company]</code> for variables.</div>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="mt-4 p-4 border rounded-4 bg-white">

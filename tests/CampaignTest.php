@@ -10,10 +10,10 @@ class CampaignTest extends BaseTest {
     }
 
     private function testVariableReplacement() {
-        $template = "Hello [contact_name], welcome to [company]!";
-        $data = ['contact_name' => 'John Doe', 'company' => 'TechCorp'];
+        $template = "Hello [contact_name], welcome to [company]! Your email is [email].";
+        $data = ['contact_name' => 'John Doe', 'company' => 'TechCorp', 'email' => 'john@example.com'];
         $result = Campaign::replaceVariables($template, $data);
-        $this->assert_equals("Hello John Doe, welcome to TechCorp!", $result, "Campaign variable replacement works correctly.");
+        $this->assert_equals("Hello John Doe, welcome to TechCorp! Your email is john@example.com.", $result, "Campaign variable replacement works correctly.");
 
         $template2 = "Dear [designation] from [company_type].";
         $data2 = ['designation' => 'Manager', 'company_type' => 'Retail'];

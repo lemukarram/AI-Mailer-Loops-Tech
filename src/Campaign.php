@@ -5,6 +5,7 @@ class Campaign {
     public static function replaceVariables($template, $data) {
         $variables = [
             '[contact_name]' => $data['contact_name'] ?? '',
+            '[email]' => $data['email'] ?? '',
             '[company]' => $data['company'] ?? '',
             '[designation]' => $data['designation'] ?? '',
             '[company_type]' => $data['company_type'] ?? ''

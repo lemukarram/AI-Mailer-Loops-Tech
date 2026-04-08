@@ -32,9 +32,9 @@ $csrf_token = Auth::generateCSRFToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - aiMailSaas</title>
+    <title>Dashboard - AI Mailer</title>
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -43,267 +43,351 @@ $csrf_token = Auth::generateCSRFToken();
     
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            --sidebar-width: 260px;
-            --bg-color: #f3f4f6;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #64748b;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 280px;
         }
         
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-color);
-            color: #1f2937;
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f1f5f9;
+            color: #334155;
+            overflow-x: hidden;
         }
 
-        /* Layout */
-        .wrapper { display: flex; width: 100%; align-items: stretch; }
-        
         /* Sidebar */
         #sidebar {
-            min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
-            background: #111827;
+            width: var(--sidebar-width);
+            background: var(--dark);
             color: #fff;
-            transition: all 0.3s;
             min-height: 100vh;
-            z-index: 1000;
+            position: fixed;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1030;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
         }
         
-        #sidebar.active { margin-left: calc(-1 * var(--sidebar-width)); }
+        #sidebar.collapsed { margin-left: calc(-1 * var(--sidebar-width)); }
         
-        .sidebar-header { padding: 2rem 1.5rem; background: #111827; }
-        .sidebar-header h4 { font-weight: 700; letter-spacing: -0.5px; color: #6366f1; }
+        .sidebar-brand { 
+            padding: 2.5rem 1.5rem; 
+            display: flex; 
+            align-items: center; 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: #fff;
+            text-decoration: none;
+        }
+        .sidebar-brand i { 
+            background: var(--primary); 
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 10px; 
+            margin-right: 12px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
         
-        #sidebar ul.components { padding: 0 1rem; }
-        #sidebar ul li a {
-            padding: 0.8rem 1rem;
+        .nav-menu { padding: 0 1rem; }
+        .nav-item { margin-bottom: 0.5rem; }
+        .nav-link {
             display: flex;
             align-items: center;
-            color: #9ca3af;
+            padding: 0.85rem 1.25rem;
+            color: #94a3b8;
             text-decoration: none;
-            border-radius: 0.5rem;
-            margin-bottom: 0.25rem;
-            transition: 0.2s;
+            border-radius: 12px;
+            transition: 0.2s all;
+            font-weight: 500;
         }
-        
-        #sidebar ul li a i { margin-right: 12px; width: 20px; text-align: center; }
-        #sidebar ul li a:hover, #sidebar ul li.active > a {
-            background: rgba(255,255,255,0.05);
+        .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
+        .nav-link:hover, .nav-link.active {
             color: #fff;
+            background: rgba(255,255,255,0.08);
         }
-        #sidebar ul li.active > a { background: var(--primary-gradient); color: #fff; }
+        .nav-link.active {
+            background: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .nav-link.text-danger:hover { background: rgba(239, 68, 68, 0.1); }
 
-        /* Main Content */
-        #content { width: 100%; padding: 0; min-height: 100vh; transition: all 0.3s; }
-        .top-navbar { background: #fff; padding: 1rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .page-content { padding: 2rem; }
+        /* Content Area */
+        #content {
+            margin-left: var(--sidebar-width);
+            transition: all 0.3s;
+            min-height: 100vh;
+        }
+        #content.expanded { margin-left: 0; }
 
-        /* Cards */
-        .stat-card {
+        .top-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Stat Cards */
+        .card-stat {
             border: none;
-            border-radius: 1rem;
+            border-radius: 20px;
             padding: 1.5rem;
-            color: #fff;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
         }
-        .stat-card.bg-total { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
-        .stat-card.bg-sent { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        .stat-card.bg-queue { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-        .stat-card i {
-            position: absolute;
-            right: -10px;
-            bottom: -10px;
-            font-size: 5rem;
-            opacity: 0.2;
+        .card-stat:hover { transform: translateY(-5px); }
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
         }
+        .icon-total { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .icon-sent { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .icon-queue { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
 
-        /* Table UI */
-        .card-table { border: none; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .table thead th { background: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 1rem; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: #6b7280; }
-        .table tbody td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #f3f4f6; }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); position: absolute; }
-            #sidebar.active { margin-left: 0; }
-            .main-content { margin-left: 0; }
-            .stat-card { margin-bottom: 1rem; }
+        /* Table Style */
+        .data-card {
+            background: #fff;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04);
+            padding: 1.5rem;
         }
-        
-        .btn-modern { border-radius: 0.5rem; padding: 0.6rem 1.2rem; font-weight: 500; }
+        .table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+            border: none;
+            padding: 1.25rem 1rem;
+        }
+        .table tbody td { padding: 1.25rem 1rem; border-color: #f1f5f9; }
+
+        /* Buttons */
+        .btn-action {
+            border-radius: 12px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .btn-primary { background: var(--primary); border: none; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            #sidebar.mobile-show { margin-left: 0; }
+            #content { margin-left: 0; }
+        }
     </style>
 </head>
 <body>
 
-<div class="wrapper">
+<div class="d-flex">
     <!-- Sidebar -->
     <nav id="sidebar">
-        <div class="sidebar-header">
-            <h4><i class="fas fa-paper-plane me-2"></i>aiMailSaas</h4>
-        </div>
+        <a href="index.php" class="sidebar-brand">
+            <i class="fas fa-mailbox"></i>
+            <span>AI Mailer</span>
+        </a>
 
-        <ul class="list-unstyled components">
-            <li class="active">
-                <a href="index.php"><i class="fas fa-th-large"></i> Dashboard</a>
-            </li>
-            <li>
-                <a href="campaigns.php"><i class="fas fa-bullhorn"></i> Campaigns</a>
-            </li>
-            <li>
-                <a href="settings.php"><i class="fas fa-cog"></i> Settings</a>
-            </li>
+        <div class="nav-menu">
+            <div class="nav-item">
+                <a href="index.php" class="nav-link active">
+                    <i class="fas fa-grid-2"></i> Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="campaigns.php" class="nav-link">
+                    <i class="fas fa-bolt"></i> Campaigns
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="settings.php" class="nav-link">
+                    <i class="fas fa-sliders"></i> Settings
+                </a>
+            </div>
             <?php if ($user_role === 'admin'): ?>
-                <li>
-                    <a href="admin/users.php"><i class="fas fa-user-shield"></i> Admin Panel</a>
-                </li>
+                <div class="nav-item">
+                    <a href="admin/users.php" class="nav-link">
+                        <i class="fas fa-shield-halved"></i> Admin Panel
+                    </a>
+                </div>
             <?php endif; ?>
-            <li class="mt-5">
-                <a href="logout.php" class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </li>
-        </ul>
+            <div class="nav-item mt-5">
+                <a href="logout.php" class="nav-link text-danger">
+                    <i class="fas fa-arrow-right-from-bracket"></i> Logout
+                </a>
+            </div>
+        </div>
     </nav>
 
-    <!-- Page Content -->
-    <div id="content">
-        <nav class="navbar navbar-expand-lg top-navbar">
-            <div class="container-fluid">
-                <button type="button" id="sidebarCollapse" class="btn btn-light me-3">
-                    <i class="fas fa-bars"></i>
+    <!-- Main Content -->
+    <div id="content" class="flex-grow-1">
+        <div class="top-bar d-flex justify-content-between align-items-center">
+            <button id="toggleSidebar" class="btn btn-light d-lg-none">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h5 class="mb-0 fw-bold text-dark d-none d-md-block">Overview</h5>
+            
+            <div class="d-flex gap-3">
+                <button id="toggleQueueBtn" class="btn btn-action <?php echo $queue_status === 'started' ? 'btn-danger' : 'btn-success'; ?>">
+                    <i class="fas <?php echo $queue_status === 'started' ? 'fa-pause' : 'fa-play'; ?> me-2"></i>
+                    <?php echo $queue_status === 'started' ? 'Stop Queue' : 'Start Queue'; ?>
                 </button>
-                <span class="navbar-text fw-bold d-none d-md-block">
-                    Welcome back, <span class="text-primary"><?php echo htmlspecialchars($_SESSION['user_email']); ?></span>
-                </span>
-                
-                <div class="ms-auto d-flex gap-2">
-                    <button id="toggleQueueBtn" class="btn btn-modern <?php echo $queue_status === 'started' ? 'btn-danger' : 'btn-success'; ?>">
-                        <i class="fas <?php echo $queue_status === 'started' ? 'fa-stop-circle' : 'fa-play-circle'; ?> me-2"></i>
-                        <?php echo $queue_status === 'started' ? 'Stop Queue' : 'Start Queue'; ?>
-                    </button>
-                    <button class="btn btn-primary btn-modern" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                        <i class="fas fa-file-upload me-2"></i> Upload CSV
-                    </button>
-                </div>
+                <button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="fas fa-plus me-2"></i> Import List
+                </button>
             </div>
-        </nav>
+        </div>
 
-        <div class="page-content">
+        <div class="p-4 p-lg-5">
             <?php if (isset($_GET['msg'])): ?>
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4">
-                    <i class="fas fa-check-circle me-2"></i> <?php echo htmlspecialchars($_GET['msg']); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-success border-0 shadow-sm rounded-4 px-4 py-3 mb-4 d-flex align-items-center">
+                    <i class="fas fa-circle-check fs-4 me-3"></i>
+                    <div><?php echo htmlspecialchars($_GET['msg']); ?></div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
-            <!-- Analytics -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card bg-total">
-                        <small class="opacity-75 text-uppercase fw-bold">Total Contacts</small>
-                        <h2 class="mb-0 mt-1"><?php echo $total_list; ?></h2>
-                        <i class="fas fa-users"></i>
+            <!-- Stats Grid -->
+            <div class="row g-4 mb-5">
+                <div class="col-sm-6 col-xl-4">
+                    <div class="card-stat">
+                        <div class="stat-icon icon-total"><i class="fas fa-users-viewfinder"></i></div>
+                        <div>
+                            <div class="text-secondary small fw-600">Total Contacts</div>
+                            <div class="fs-3 fw-bold"><?php echo number_format($total_list); ?></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="stat-card bg-sent">
-                        <small class="opacity-75 text-uppercase fw-bold">Emails Sent</small>
-                        <h2 class="mb-0 mt-1"><?php echo $sent_count; ?></h2>
-                        <i class="fas fa-paper-plane"></i>
+                <div class="col-sm-6 col-xl-4">
+                    <div class="card-stat">
+                        <div class="stat-icon icon-sent"><i class="fas fa-paper-plane-top"></i></div>
+                        <div>
+                            <div class="text-secondary small fw-600">Emails Sent</div>
+                            <div class="fs-3 fw-bold"><?php echo number_format($sent_count); ?></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="stat-card bg-queue">
-                        <small class="opacity-75 text-uppercase fw-bold">In Queue</small>
-                        <h2 class="mb-0 mt-1"><?php echo $unsent_count; ?></h2>
-                        <i class="fas fa-hourglass-half"></i>
+                <div class="col-sm-6 col-xl-4">
+                    <div class="card-stat">
+                        <div class="stat-icon icon-queue"><i class="fas fa-timer"></i></div>
+                        <div>
+                            <div class="text-secondary small fw-600">In Queue</div>
+                            <div class="fs-3 fw-bold"><?php echo number_format($unsent_count); ?></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Table -->
-            <div class="card card-table overflow-hidden">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold mb-0">Mailing List</h5>
-                    </div>
-                    <table id="mailingTable" class="table table-hover w-100">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Company</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                    </table>
+            <!-- Main Data Table -->
+            <div class="data-card">
+                <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+                    <h5 class="fw-bold m-0 text-dark">Active Mailing List</h5>
+                    <div class="text-muted small">Updated just now</div>
                 </div>
+                <table id="mailingTable" class="table w-100">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Company</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modals -->
-<!-- Upload Modal -->
+<!-- Modals (Modernized) -->
 <div class="modal fade" id="uploadModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="upload.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-4">
+        <form action="upload.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-            <div class="modal-header border-0 pb-0">
+            <div class="modal-header bg-light border-0 px-4 pt-4">
                 <h5 class="modal-title fw-bold">Import Mailing List</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body py-4">
-                <div class="alert alert-warning border-0 small">
-                    <i class="fas fa-exclamation-triangle me-2"></i> New upload will clear your existing list.
+            <div class="modal-body p-4">
+                <div class="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 mb-4">
+                    <p class="mb-0 small text-warning-emphasis fw-500">
+                        <i class="fas fa-info-circle me-2"></i> Warning: New upload will completely replace your current list.
+                    </p>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-600">Choose CSV File</label>
-                    <input type="file" name="excel_file" class="form-control rounded-3" accept=".csv" required>
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-dark">Select CSV File</label>
+                    <input type="file" name="excel_file" class="form-control form-control-lg rounded-4 fs-6" accept=".csv" required>
                 </div>
-                <div class="bg-light p-3 rounded-3 small">
-                    <p class="mb-1 fw-bold text-muted">Required Format:</p>
-                    <code>contact name</code>, <code>email</code>, <code>company</code>, <code>designation</code>
+                <div class="p-3 bg-light rounded-4">
+                    <div class="fw-bold small text-secondary mb-2">Expected CSV Header:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-white text-dark border px-3 py-2">contact name</span>
+                        <span class="badge bg-white text-dark border px-3 py-2">email</span>
+                        <span class="badge bg-white text-dark border px-3 py-2">company</span>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer border-0">
-                <button type="submit" class="btn btn-primary btn-modern w-100">Upload & Replace List</button>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-primary btn-action w-100 py-3 shadow">Import & Sync List</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- AI/Manual Review Modal -->
 <div class="modal fade" id="emailModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-dark text-white border-0 rounded-top-4">
-                <h5 class="modal-title"><i class="fas fa-envelope-open-text me-2"></i> Review & Send</h5>
+        <div class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
+            <div class="modal-header bg-dark text-white border-0 p-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-sparkles me-2 text-primary"></i> AI Content Review</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-4 bg-light bg-opacity-50">
                 <input type="hidden" id="current_contact_id">
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-muted small">Recipient</label>
-                    <input type="text" id="email_to" class="form-control border-0 bg-light rounded-3" readonly>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">To Recipient</label>
+                    <input type="text" id="email_to" class="form-control border-0 shadow-sm rounded-4 px-4 py-3 fw-600" readonly>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-muted small">Subject Line</label>
-                    <input type="text" id="email_subject" class="form-control rounded-3 border-light shadow-sm">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">Subject Line</label>
+                    <input type="text" id="email_subject" class="form-control border-0 shadow-sm rounded-4 px-4 py-3">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-muted small">Email Body</label>
-                    <textarea id="email_body" class="form-control rounded-3 border-light shadow-sm" rows="10"></textarea>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">Email Message Body</label>
+                    <textarea id="email_body" class="form-control border-0 shadow-sm rounded-4 px-4 py-3" rows="10"></textarea>
                 </div>
                 <div class="mb-0">
-                    <label class="form-label fw-bold text-muted small">Footer / Signature</label>
-                    <input type="text" id="email_footer" class="form-control rounded-3 border-light shadow-sm">
+                    <label class="form-label small fw-bold text-secondary">Signature / Footer</label>
+                    <input type="text" id="email_footer" class="form-control border-0 shadow-sm rounded-4 px-4 py-3">
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0 rounded-bottom-4">
-                <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Discard</button>
-                <button id="sendNowBtn" class="btn btn-primary btn-modern px-5 shadow-sm">
-                    <i class="fas fa-paper-plane me-2"></i> Send Instantly
+            <div class="modal-footer border-0 p-4 bg-white">
+                <button type="button" class="btn btn-light btn-action px-4" data-bs-dismiss="modal">Discard</button>
+                <button id="sendNowBtn" class="btn btn-primary btn-action px-5 shadow">
+                    <i class="fas fa-paper-plane-top me-2"></i> Fire Email
                 </button>
             </div>
         </div>
@@ -319,24 +403,35 @@ $csrf_token = Auth::generateCSRFToken();
 
 <script>
 $(document).ready(function() {
-    // Sidebar toggle
-    $('#sidebarCollapse').on('click', function() {
-        $('#sidebar').toggleClass('active');
+    // Mobile Sidebar Toggle
+    $('#toggleSidebar').on('click', function() {
+        $('#sidebar').toggleClass('mobile-show');
     });
 
     var table = $('#mailingTable').DataTable({
         ajax: 'api/mailing_list.php',
         responsive: true,
         order: [[0, 'asc']],
+        dom: '<"d-flex justify-content-between align-items-center mb-3"f>rt<"d-flex justify-content-between align-items-center mt-3"ip>',
         columns: [
-            { data: 'contact_name' },
+            { 
+                data: 'contact_name',
+                render: function(data) {
+                    return `<div class="fw-bold text-dark">${data}</div>`;
+                }
+            },
             { data: 'email' },
-            { data: 'company' },
+            { 
+                data: 'company',
+                render: function(data) {
+                    return data ? `<span class="badge bg-light text-dark border">${data}</span>` : '-';
+                }
+            },
             { 
                 data: 'status',
                 render: function(data) {
-                    let badge = data === 'sent' ? 'bg-success' : (data === 'failed' ? 'bg-danger' : 'bg-secondary');
-                    return `<span class="badge rounded-pill ${badge} px-3 py-2">${data}</span>`;
+                    let color = data === 'sent' ? 'success' : (data === 'failed' ? 'danger' : 'secondary');
+                    return `<div class="d-flex align-items-center"><span class="bg-${color} rounded-circle me-2" style="width:8px; height:8px;"></span> <span class="text-${color} fw-600 small text-uppercase">${data}</span></div>`;
                 }
             },
             { 
@@ -344,30 +439,35 @@ $(document).ready(function() {
                 className: 'text-end',
                 render: function(data, type, row) {
                     return `
-                        <div class="btn-group shadow-sm">
-                            <button class="btn btn-sm btn-info text-white generate-ai-btn" title="AI Generate" data-id="${row.id}"><i class="fas fa-magic"></i> AI</button>
-                            <button class="btn btn-sm btn-primary review-manual-btn" title="Manual Review" data-id="${row.id}"><i class="fas fa-edit"></i> Review</button>
+                        <div class="dropdown">
+                            <button class="btn btn-light btn-sm rounded-3 px-3" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
+                                <li><a class="dropdown-item py-2 generate-ai-btn" href="#" data-id="${row.id}"><i class="fas fa-sparkles text-primary me-2"></i> AI Generate</a></li>
+                                <li><a class="dropdown-item py-2 review-manual-btn" href="#" data-id="${row.id}"><i class="fas fa-pen-to-square text-secondary me-2"></i> Manual Edit</a></li>
+                            </ul>
                         </div>
                     `;
                 }
             }
         ],
         language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search contacts...",
-            lengthMenu: "_MENU_ per page",
+            search: "",
+            searchPlaceholder: "Quick search contacts...",
+            paginate: { next: '<i class="fas fa-chevron-right"></i>', previous: '<i class="fas fa-chevron-left"></i>' }
         }
     });
 
     // Handle AI Generation
-    $(document).on('click', '.generate-ai-btn', function() {
+    $(document).on('click', '.generate-ai-btn', function(e) {
+        e.preventDefault();
         var id = $(this).data('id');
-        var btn = $(this);
-        var oldHtml = btn.html();
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        var item = $(this);
+        item.html('<i class="fas fa-spinner fa-spin me-2"></i> Generating...');
 
         $.post('api/generate_ai.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).html(oldHtml);
+            item.html('<i class="fas fa-sparkles text-primary me-2"></i> AI Generate');
             if(res.success) {
                 $('#current_contact_id').val(id);
                 $('#email_to').val(res.recipient);
@@ -382,14 +482,10 @@ $(document).ready(function() {
     });
 
     // Handle Manual Review
-    $(document).on('click', '.review-manual-btn', function() {
+    $(document).on('click', '.review-manual-btn', function(e) {
+        e.preventDefault();
         var id = $(this).data('id');
-        var btn = $(this);
-        var oldHtml = btn.html();
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
-
         $.post('api/prepare_template.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).html(oldHtml);
             if(res.success) {
                 $('#current_contact_id').val(id);
                 $('#email_to').val(res.recipient);
@@ -411,10 +507,10 @@ $(document).ready(function() {
         var footer = $('#email_footer').val();
         
         var btn = $(this);
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sending...');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Sending...');
 
         $.post('api/send_single.php', { id: id, subject: subject, body: body, footer: footer, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Send Instantly');
+            btn.prop('disabled', false).html('<i class="fas fa-paper-plane-top me-2"></i> Fire Email');
             if(res.success) {
                 $('#emailModal').modal('hide');
                 table.ajax.reload();

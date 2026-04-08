@@ -5,12 +5,11 @@ require_once __DIR__ . '/src/Crypto.php';
 
 Auth::requireLogin();
 $user_id = Auth::getUserId();
+$user_role = $_SESSION['user_role'];
 $db = Database::getInstance()->getConnection();
 
-$message = '';
-$error = '';
+$message = ''; $error = '';
 
-// Handle Settings Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (Auth::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         $openai_key = $_POST['openai_api_key'] ?? '';
@@ -22,43 +21,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $smtp_pass = $_POST['smtp_pass'] ?? '';
         $personal_limit = (int)($_POST['personal_hourly_limit'] ?? 50);
 
-        // Fetch existing settings
         $stmt = $db->prepare("SELECT * FROM user_settings WHERE user_id = ?");
         $stmt->execute([$user_id]);
-        $existing_settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-        // Encrypt passwords if they are provided, otherwise keep existing
-        $enc_openai = !empty($openai_key) ? Crypto::encrypt($openai_key) : ($existing_settings['openai_api_key'] ?? null);
-        $enc_gemini = !empty($gemini_key) ? Crypto::encrypt($gemini_key) : ($existing_settings['gemini_api_key'] ?? null);
-        $enc_smtp_pass = !empty($smtp_pass) ? Crypto::encrypt($smtp_pass) : ($existing_settings['smtp_pass'] ?? null);
+        $enc_openai = !empty($openai_key) ? Crypto::encrypt($openai_key) : ($existing['openai_api_key'] ?? null);
+        $enc_gemini = !empty($gemini_key) ? Crypto::encrypt($gemini_key) : ($existing['gemini_api_key'] ?? null);
+        $enc_smtp_pass = !empty($smtp_pass) ? Crypto::encrypt($smtp_pass) : ($existing['smtp_pass'] ?? null);
 
         try {
             $stmt = $db->prepare("INSERT INTO user_settings (user_id, openai_api_key, gemini_api_key, preferred_llm, smtp_host, smtp_port, smtp_user, smtp_pass, personal_hourly_limit) 
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) 
                                  ON DUPLICATE KEY UPDATE 
-                                 openai_api_key = VALUES(openai_api_key), 
-                                 gemini_api_key = VALUES(gemini_api_key), 
-                                 preferred_llm = VALUES(preferred_llm), 
-                                 smtp_host = VALUES(smtp_host), 
-                                 smtp_port = VALUES(smtp_port), 
-                                 smtp_user = VALUES(smtp_user), 
-                                 smtp_pass = VALUES(smtp_pass), 
-                                 personal_hourly_limit = VALUES(personal_hourly_limit)");
+                                 openai_api_key = VALUES(openai_api_key), gemini_api_key = VALUES(gemini_api_key), 
+                                 preferred_llm = VALUES(preferred_llm), smtp_host = VALUES(smtp_host), 
+                                 smtp_port = VALUES(smtp_port), smtp_user = VALUES(smtp_user), 
+                                 smtp_pass = VALUES(smtp_pass), personal_hourly_limit = VALUES(personal_hourly_limit)");
             $stmt->execute([$user_id, $enc_openai, $enc_gemini, $preferred_llm, $smtp_host, $smtp_port, $smtp_user, $enc_smtp_pass, $personal_limit]);
             $message = "Settings updated successfully.";
-        } catch (PDOException $e) {
-            $error = "Error updating settings: " . $e->getMessage();
-        }
-    } else {
-        $error = "Invalid CSRF token.";
+        } catch (PDOException $e) { $error = "Error: " . $e->getMessage(); }
     }
 }
 
-// Fetch current settings
 $stmt = $db->prepare("SELECT * FROM user_settings WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-
 $csrf_token = Auth::generateCSRFToken();
 ?>
 <!DOCTYPE html>
@@ -66,85 +53,100 @@ $csrf_token = Auth::generateCSRFToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - aiMailSaas</title>
+    <title>Settings - AI Mailer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; }
+        .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
+        .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; }
+        .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; }
+        .nav-link.active { background: var(--primary); color: #fff; }
+        #content { margin-left: var(--sidebar-width); padding: 3rem; }
+        .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2.5rem; }
+        .form-label { font-weight: 600; color: #475569; }
+        .form-control, .form-select { border-radius: 12px; padding: 0.75rem 1rem; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 12px; padding: 0.8rem 2rem; font-weight: 700; }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white d-flex justify-content-between">
-                    <h5 class="mb-0">User Settings</h5>
-                    <a href="index.php" class="btn btn-sm btn-light">Back to Dashboard</a>
+<div class="d-flex">
+    <nav id="sidebar">
+        <a href="index.php" class="sidebar-brand"><i class="fas fa-mailbox"></i><span>AI Mailer</span></a>
+        <div class="nav-menu">
+            <a href="index.php" class="nav-link"><i class="fas fa-grid-2"></i> Dashboard</a>
+            <a href="campaigns.php" class="nav-link"><i class="fas fa-bolt"></i> Campaigns</a>
+            <a href="settings.php" class="nav-link active"><i class="fas fa-sliders"></i> Settings</a>
+            <?php if ($user_role === 'admin'): ?><a href="admin/users.php" class="nav-link"><i class="fas fa-shield-halved"></i> Admin Panel</a><?php endif; ?>
+            <a href="logout.php" class="nav-link text-danger mt-5"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+        </div>
+    </nav>
+
+    <div id="content" class="flex-grow-1">
+        <div class="glass-card">
+            <h4 class="fw-bold mb-4 text-dark">System Configuration</h4>
+            <?php if($message): ?><div class="alert alert-success rounded-4 border-0"><?php echo $message; ?></div><?php endif; ?>
+            <?php if($error): ?><div class="alert alert-danger rounded-4 border-0"><?php echo $error; ?></div><?php endif; ?>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                
+                <div class="row g-4 mb-5">
+                    <div class="col-12"><h6 class="fw-bold text-muted text-uppercase small border-bottom pb-2">AI API Credentials</h6></div>
+                    <div class="col-md-6">
+                        <label class="form-label">OpenAI API Key</label>
+                        <input type="password" name="openai_api_key" class="form-control" placeholder="<?php echo !empty($settings['openai_api_key']) ? '••••••••••••' : 'Enter OpenAI Key'; ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Gemini API Key</label>
+                        <input type="password" name="gemini_api_key" class="form-control" placeholder="<?php echo !empty($settings['gemini_api_key']) ? '••••••••••••' : 'Enter Gemini Key'; ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Default Generation Model</label>
+                        <select name="preferred_llm" class="form-select">
+                            <option value="openai" <?php echo ($settings['preferred_llm'] ?? '') === 'openai' ? 'selected' : ''; ?>>OpenAI (GPT-5)</option>
+                            <option value="gemini" <?php echo ($settings['preferred_llm'] ?? '') === 'gemini' ? 'selected' : ''; ?>>Gemini (2.5 Flash)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <?php if ($message): ?>
-                        <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
-                    <?php endif; ?>
-                    <?php if ($error): ?>
-                        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-                    <?php endif; ?>
 
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                        
-                        <h6 class="border-bottom pb-2 mb-3">AI Configuration</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">OpenAI API Key</label>
-                                <input type="password" name="openai_api_key" class="form-control" placeholder="<?php echo !empty($settings['openai_api_key']) ? '******** (leave empty to keep)' : 'Enter key'; ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Gemini API Key</label>
-                                <input type="password" name="gemini_api_key" class="form-control" placeholder="<?php echo !empty($settings['gemini_api_key']) ? '******** (leave empty to keep)' : 'Enter key'; ?>">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Preferred LLM</label>
-                            <select name="preferred_llm" class="form-select">
-                                <option value="openai" <?php echo ($settings['preferred_llm'] ?? '') === 'openai' ? 'selected' : ''; ?>>OpenAI (GPT-5)</option>
-                                <option value="gemini" <?php echo ($settings['preferred_llm'] ?? '') === 'gemini' ? 'selected' : ''; ?>>Gemini (2.5 Flash)</option>
-                            </select>
-                        </div>
-
-                        <h6 class="border-bottom pb-2 mb-3 mt-4">SMTP Configuration</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-8">
-                                <label class="form-label">SMTP Host</label>
-                                <input type="text" name="smtp_host" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_host'] ?? ''); ?>" placeholder="smtp.gmail.com">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">SMTP Port</label>
-                                <input type="number" name="smtp_port" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_port'] ?? 587); ?>">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">SMTP Username</label>
-                                <input type="text" name="smtp_user" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_user'] ?? ''); ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">SMTP Password</label>
-                                <input type="password" name="smtp_pass" class="form-control" placeholder="<?php echo !empty($settings['smtp_pass']) ? '******** (leave empty to keep)' : 'Enter password'; ?>">
-                            </div>
-                        </div>
-
-                        <h6 class="border-bottom pb-2 mb-3 mt-4">Limits & Queue</h6>
-                        <div class="mb-3">
-                            <label class="form-label">Personal Hourly Send Limit</label>
-                            <input type="number" name="personal_hourly_limit" class="form-control" value="<?php echo htmlspecialchars($settings['personal_hourly_limit'] ?? 50); ?>">
-                            <div class="form-text">Cannot exceed the global limit set by the administrator.</div>
-                        </div>
-
-                        <div class="d-grid mt-4 gap-2">
-                            <button type="button" id="testSmtpBtn" class="btn btn-outline-info">Test SMTP Connection</button>
-                            <button type="submit" class="btn btn-primary">Save Settings</button>
-                        </div>
-                    </form>
+                <div class="row g-4 mb-5">
+                    <div class="col-12"><h6 class="fw-bold text-muted text-uppercase small border-bottom pb-2">SMTP Mail Server</h6></div>
+                    <div class="col-md-8">
+                        <label class="form-label">SMTP Host</label>
+                        <input type="text" name="smtp_host" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_host'] ?? ''); ?>" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SMTP Port</label>
+                        <input type="number" name="smtp_port" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_port'] ?? 587); ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Username / Email</label>
+                        <input type="text" name="smtp_user" class="form-control" value="<?php echo htmlspecialchars($settings['smtp_user'] ?? ''); ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">SMTP Password</label>
+                        <input type="password" name="smtp_pass" class="form-control" placeholder="<?php echo !empty($settings['smtp_pass']) ? '••••••••••••' : 'Enter Password'; ?>">
+                    </div>
                 </div>
-            </div>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-12"><h6 class="fw-bold text-muted text-uppercase small border-bottom pb-2">Sending Preferences</h6></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Personal Hourly Limit</label>
+                        <input type="number" name="personal_hourly_limit" class="form-control" value="<?php echo htmlspecialchars($settings['personal_hourly_limit'] ?? 50); ?>">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="button" id="testSmtpBtn" class="btn btn-outline-secondary btn-action px-4 py-3 border-2 fw-bold">Test Connection</button>
+                    <button type="submit" class="btn btn-primary shadow px-5 py-3">Save All Configurations</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -161,20 +163,13 @@ $(document).ready(function() {
             smtp_user: $('input[name="smtp_user"]').val(),
             smtp_pass: $('input[name="smtp_pass"]').val()
         };
-
-        btn.prop('disabled', true).text('Testing connection...');
-
+        btn.prop('disabled', true).text('Testing...');
         $.post('api/test_smtp.php', formData, function(res) {
-            btn.prop('disabled', false).text('Test SMTP Connection');
-            if(res.success) {
-                alert(res.message);
-            } else {
-                alert('Error: ' + res.error);
-            }
+            btn.prop('disabled', false).text('Test Connection');
+            alert(res.success ? res.message : 'Error: ' + res.error);
         }, 'json');
     });
 });
 </script>
-
 </body>
 </html>

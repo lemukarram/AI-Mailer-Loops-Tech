@@ -21,7 +21,7 @@ $tests = [
 $totalPassed = 0;
 $totalFailed = 0;
 
-echo "--- Running aiMailSaas Unit Tests ---\n\n";
+echo "--- Running AI Mailer Unit Tests ---\n\n";
 
 foreach ($tests as $test) {
     $test->run();

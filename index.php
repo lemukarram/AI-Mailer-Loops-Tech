@@ -109,12 +109,13 @@ $csrf_token = Auth::generateCSRFToken();
             font-weight: 500;
         }
         .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover {
             color: #fff;
             background: rgba(255,255,255,0.08);
         }
         .nav-link.active {
-            background: var(--primary);
+            background: var(--primary) !important;
+            color: #fff !important;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
         .nav-link.text-danger:hover { background: rgba(239, 68, 68, 0.1); }
@@ -207,36 +208,36 @@ $csrf_token = Auth::generateCSRFToken();
     <!-- Sidebar -->
     <nav id="sidebar">
         <a href="index.php" class="sidebar-brand">
-            <i class="fas fa-mailbox"></i>
+            <i class="fas fa-inbox"></i>
             <span>AI Mailer</span>
         </a>
 
         <div class="nav-menu">
             <div class="nav-item">
                 <a href="index.php" class="nav-link active">
-                    <i class="fas fa-grid-2"></i> Dashboard
+                    <i class="fas fa-house"></i> Dashboard
                 </a>
             </div>
             <div class="nav-item">
                 <a href="campaigns.php" class="nav-link">
-                    <i class="fas fa-bolt"></i> Campaigns
+                    <i class="fas fa-bullhorn"></i> Campaigns
                 </a>
             </div>
             <div class="nav-item">
                 <a href="settings.php" class="nav-link">
-                    <i class="fas fa-sliders"></i> Settings
+                    <i class="fas fa-gear"></i> Settings
                 </a>
             </div>
             <?php if ($user_role === 'admin'): ?>
                 <div class="nav-item">
                     <a href="admin/users.php" class="nav-link">
-                        <i class="fas fa-shield-halved"></i> Admin Panel
+                        <i class="fas fa-user-shield"></i> Admin Panel
                     </a>
                 </div>
             <?php endif; ?>
             <div class="nav-item mt-5">
                 <a href="logout.php" class="nav-link text-danger">
-                    <i class="fas fa-arrow-right-from-bracket"></i> Logout
+                    <i class="fas fa-right-from-bracket"></i> Logout
                 </a>
             </div>
         </div>
@@ -256,7 +257,7 @@ $csrf_token = Auth::generateCSRFToken();
                     <?php echo $queue_status === 'started' ? 'Stop Queue' : 'Start Queue'; ?>
                 </button>
                 <button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                    <i class="fas fa-plus me-2"></i> Import List
+                    <i class="fas fa-upload me-2"></i> Import List
                 </button>
             </div>
         </div>
@@ -274,7 +275,7 @@ $csrf_token = Auth::generateCSRFToken();
             <div class="row g-4 mb-5">
                 <div class="col-sm-6 col-xl-4">
                     <div class="card-stat">
-                        <div class="stat-icon icon-total"><i class="fas fa-users-viewfinder"></i></div>
+                        <div class="stat-icon icon-total"><i class="fas fa-users"></i></div>
                         <div>
                             <div class="text-secondary small fw-600">Total Contacts</div>
                             <div class="fs-3 fw-bold"><?php echo number_format($total_list); ?></div>
@@ -283,7 +284,7 @@ $csrf_token = Auth::generateCSRFToken();
                 </div>
                 <div class="col-sm-6 col-xl-4">
                     <div class="card-stat">
-                        <div class="stat-icon icon-sent"><i class="fas fa-paper-plane-top"></i></div>
+                        <div class="stat-icon icon-sent"><i class="fas fa-paper-plane"></i></div>
                         <div>
                             <div class="text-secondary small fw-600">Emails Sent</div>
                             <div class="fs-3 fw-bold"><?php echo number_format($sent_count); ?></div>
@@ -292,7 +293,7 @@ $csrf_token = Auth::generateCSRFToken();
                 </div>
                 <div class="col-sm-6 col-xl-4">
                     <div class="card-stat">
-                        <div class="stat-icon icon-queue"><i class="fas fa-timer"></i></div>
+                        <div class="stat-icon icon-queue"><i class="fas fa-clock"></i></div>
                         <div>
                             <div class="text-secondary small fw-600">In Queue</div>
                             <div class="fs-3 fw-bold"><?php echo number_format($unsent_count); ?></div>
@@ -323,7 +324,7 @@ $csrf_token = Auth::generateCSRFToken();
     </div>
 </div>
 
-<!-- Modals (Modernized) -->
+<!-- Modals -->
 <div class="modal fade" id="uploadModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form action="upload.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
@@ -335,7 +336,7 @@ $csrf_token = Auth::generateCSRFToken();
             <div class="modal-body p-4">
                 <div class="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 mb-4">
                     <p class="mb-0 small text-warning-emphasis fw-500">
-                        <i class="fas fa-info-circle me-2"></i> Warning: New upload will completely replace your current list.
+                        <i class="fas fa-triangle-exclamation me-2"></i> Warning: New upload will completely replace your current list.
                     </p>
                 </div>
                 <div class="mb-4">
@@ -362,14 +363,14 @@ $csrf_token = Auth::generateCSRFToken();
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
             <div class="modal-header bg-dark text-white border-0 p-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-sparkles me-2 text-primary"></i> AI Content Review</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-wand-magic-sparkles me-2 text-primary"></i> Content Review</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4 bg-light bg-opacity-50">
                 <input type="hidden" id="current_contact_id">
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-secondary">To Recipient</label>
-                    <input type="text" id="email_to" class="form-control border-0 shadow-sm rounded-4 px-4 py-3 fw-600" readonly>
+                    <input type="text" id="email_to" class="form-control border-0 shadow-sm rounded-4 px-4 py-3" readonly>
                 </div>
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-secondary">Subject Line</label>
@@ -387,7 +388,7 @@ $csrf_token = Auth::generateCSRFToken();
             <div class="modal-footer border-0 p-4 bg-white">
                 <button type="button" class="btn btn-light btn-action px-4" data-bs-dismiss="modal">Discard</button>
                 <button id="sendNowBtn" class="btn btn-primary btn-action px-5 shadow">
-                    <i class="fas fa-paper-plane-top me-2"></i> Fire Email
+                    <i class="fas fa-paper-plane me-2"></i> Fire Email
                 </button>
             </div>
         </div>
@@ -403,7 +404,6 @@ $csrf_token = Auth::generateCSRFToken();
 
 <script>
 $(document).ready(function() {
-    // Mobile Sidebar Toggle
     $('#toggleSidebar').on('click', function() {
         $('#sidebar').toggleClass('mobile-show');
     });
@@ -441,10 +441,10 @@ $(document).ready(function() {
                     return `
                         <div class="dropdown">
                             <button class="btn btn-light btn-sm rounded-3 px-3" data-bs-toggle="dropdown">
-                                <i class="fas fa-ellipsis-v"></i>
+                                <i class="fas fa-ellipsis-vertical"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
-                                <li><a class="dropdown-item py-2 generate-ai-btn" href="#" data-id="${row.id}"><i class="fas fa-sparkles text-primary me-2"></i> AI Generate</a></li>
+                                <li><a class="dropdown-item py-2 generate-ai-btn" href="#" data-id="${row.id}"><i class="fas fa-wand-sparkles text-primary me-2"></i> AI Generate</a></li>
                                 <li><a class="dropdown-item py-2 review-manual-btn" href="#" data-id="${row.id}"><i class="fas fa-pen-to-square text-secondary me-2"></i> Manual Edit</a></li>
                             </ul>
                         </div>
@@ -454,20 +454,19 @@ $(document).ready(function() {
         ],
         language: {
             search: "",
-            searchPlaceholder: "Quick search contacts...",
+            searchPlaceholder: "Search contacts...",
             paginate: { next: '<i class="fas fa-chevron-right"></i>', previous: '<i class="fas fa-chevron-left"></i>' }
         }
     });
 
-    // Handle AI Generation
     $(document).on('click', '.generate-ai-btn', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
         var item = $(this);
-        item.html('<i class="fas fa-spinner fa-spin me-2"></i> Generating...');
+        item.html('<i class="fas fa-circle-notch fa-spin me-2"></i> Generating...');
 
         $.post('api/generate_ai.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            item.html('<i class="fas fa-sparkles text-primary me-2"></i> AI Generate');
+            item.html('<i class="fas fa-wand-sparkles text-primary me-2"></i> AI Generate');
             if(res.success) {
                 $('#current_contact_id').val(id);
                 $('#email_to').val(res.recipient);
@@ -475,13 +474,10 @@ $(document).ready(function() {
                 $('#email_body').val(res.data.body);
                 $('#email_footer').val(res.data.footer);
                 $('#emailModal').modal('show');
-            } else {
-                alert(res.error);
-            }
+            } else { alert(res.error); }
         }, 'json');
     });
 
-    // Handle Manual Review
     $(document).on('click', '.review-manual-btn', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
@@ -493,42 +489,31 @@ $(document).ready(function() {
                 $('#email_body').val(res.body);
                 $('#email_footer').val(res.footer);
                 $('#emailModal').modal('show');
-            } else {
-                alert(res.error);
-            }
+            } else { alert(res.error); }
         }, 'json');
     });
 
-    // Handle Instant Send
     $('#sendNowBtn').on('click', function() {
         var id = $('#current_contact_id').val();
         var subject = $('#email_subject').val();
         var body = $('#email_body').val();
         var footer = $('#email_footer').val();
-        
         var btn = $(this);
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Sending...');
+        btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin me-2"></i> Sending...');
 
         $.post('api/send_single.php', { id: id, subject: subject, body: body, footer: footer, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).html('<i class="fas fa-paper-plane-top me-2"></i> Fire Email');
+            btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Fire Email');
             if(res.success) {
                 $('#emailModal').modal('hide');
                 table.ajax.reload();
-            } else {
-                alert(res.error);
-            }
+            } else { alert(res.error); }
         }, 'json');
     });
 
-    // Handle Queue Toggle
     $('#toggleQueueBtn').on('click', function() {
         var btn = $(this);
         $.post('api/toggle_queue.php', { csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            if(res.success) {
-                location.reload();
-            } else {
-                alert(res.error);
-            }
+            if(res.success) { location.reload(); } else { alert(res.error); }
         }, 'json');
     });
 });

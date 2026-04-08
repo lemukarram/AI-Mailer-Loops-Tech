@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                      subject_template=VALUES(subject_template), body_template=VALUES(body_template), 
                                      footer_template=VALUES(footer_template), attachment_path=VALUES(attachment_path)");
                 $stmt->execute([$user_id, $title, $base_prompt, $subject_template, $body_template, $footer_template, $attachment_path]);
-                $message = "Campaign settings saved successfully.";
-            } catch (PDOException $e) { $error = "Database error: " . $e->getMessage(); }
+                $message = "Campaign configuration synced successfully.";
+            } catch (PDOException $e) { $error = "Sync failed: " . $e->getMessage(); }
         }
     }
 }
@@ -62,93 +62,113 @@ $csrf_token = Auth::generateCSRFToken();
         :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #334155; }
         
-        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; }
+        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
         .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
-        .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; }
+        .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
         
-        .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; }
-        .nav-link i { margin-right: 12px; width: 24px; text-align: center; }
-        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.08); }
-        .nav-link.active { background: var(--primary); }
+        .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; transition: 0.2s; }
+        .nav-link i { margin-right: 12px; width: 24px; text-align: center; font-size: 1.1rem; }
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-link.active { background: var(--primary) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
-        #content { margin-left: var(--sidebar-width); padding: 3rem; }
-        .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2rem; }
-        .form-label { font-weight: 600; color: #475569; font-size: 0.9rem; }
-        .form-control { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
+        #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; }
+        .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2.5rem; }
+        .form-label { font-weight: 600; color: #475569; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .form-control { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
-        .btn-primary { background: var(--primary); border: none; border-radius: 12px; padding: 0.8rem 2rem; font-weight: 700; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 12px; padding: 0.8rem 2.5rem; font-weight: 700; transition: 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        
+        .section-tag { background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 0.4rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
     <nav id="sidebar">
-        <a href="index.php" class="sidebar-brand"><i class="fas fa-mailbox"></i><span>AI Mailer</span></a>
-        <div class="nav-menu">
-            <a href="index.php" class="nav-link"><i class="fas fa-grid-2"></i> Dashboard</a>
-            <a href="campaigns.php" class="nav-link active"><i class="fas fa-bolt"></i> Campaigns</a>
-            <a href="settings.php" class="nav-link"><i class="fas fa-sliders"></i> Settings</a>
-            <?php if ($user_role === 'admin'): ?><a href="admin/users.php" class="nav-link"><i class="fas fa-shield-halved"></i> Admin Panel</a><?php endif; ?>
-            <a href="logout.php" class="nav-link text-danger mt-5"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+        <a href="index.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
+        <div class="nav-menu mt-2">
+            <a href="index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
+            <a href="campaigns.php" class="nav-link active"><i class="fas fa-bullhorn"></i> Campaigns</a>
+            <a href="settings.php" class="nav-link"><i class="fas fa-gear"></i> Settings</a>
+            <?php if ($user_role === 'admin'): ?><a href="admin/users.php" class="nav-link"><i class="fas fa-user-shield"></i> Admin Panel</a><?php endif; ?>
+            <a href="logout.php" class="nav-link text-danger mt-5"><i class="fas fa-right-from-bracket"></i> Logout</a>
         </div>
     </nav>
 
     <div id="content" class="flex-grow-1">
         <div class="glass-card">
-            <h4 class="fw-bold mb-4 text-dark">Campaign Settings</h4>
-            <?php if($message): ?><div class="alert alert-success border-0 rounded-4 shadow-sm mb-4"><?php echo $message; ?></div><?php endif; ?>
-            <?php if($error): ?><div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4"><?php echo $error; ?></div><?php endif; ?>
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h3 class="fw-bold m-0 text-dark">Campaign Engine</h3>
+                    <p class="text-muted small mb-0">Define how AI and Manual templates should behave.</p>
+                </div>
+                <i class="fas fa-wand-sparkles fs-2 text-primary opacity-25"></i>
+            </div>
+
+            <?php if($message): ?>
+                <div class="alert alert-success border-0 rounded-4 shadow-sm px-4 py-3 mb-4 d-flex align-items-center">
+                    <i class="fas fa-circle-check fs-5 me-3"></i><div><?php echo $message; ?></div>
+                </div>
+            <?php endif; ?>
 
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <input type="hidden" name="existing_attachment" value="<?php echo htmlspecialchars($campaign['attachment_path'] ?? ''); ?>">
 
-                <div class="mb-4">
+                <div class="mb-5">
                     <label class="form-label">Campaign Identity Name</label>
-                    <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($campaign['title'] ?? 'My Outreach'); ?>" placeholder="e.g. Senior Developer Application">
+                    <input type="text" name="title" class="form-control form-control-lg" value="<?php echo htmlspecialchars($campaign['title'] ?? 'My Outreach'); ?>" placeholder="e.g. Outreach 2024">
                 </div>
 
-                <div class="row g-4">
+                <div class="row g-5">
                     <div class="col-lg-6">
-                        <div class="p-4 bg-light rounded-4 border-0 h-100">
-                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-robot me-2"></i>AI Generation Prompt</h6>
-                            <textarea name="base_prompt" class="form-control" rows="8" placeholder="Enter your instructions for the AI..."><?php echo htmlspecialchars($campaign['base_prompt'] ?? ''); ?></textarea>
-                            <div class="mt-2 small text-muted">GPT-5 / Gemini 2.5 will use this context.</div>
+                        <div class="p-4 bg-light rounded-4 border-0 h-100 position-relative">
+                            <span class="section-tag">AI Powered</span>
+                            <h6 class="fw-bold mb-3">AI Context Prompt</h6>
+                            <textarea name="base_prompt" class="form-control bg-white" rows="10" placeholder="e.g. Write a soft, humanized outreach email..."><?php echo htmlspecialchars($campaign['base_prompt'] ?? ''); ?></textarea>
+                            <p class="mt-3 small text-muted"><i class="fas fa-info-circle me-1"></i> GPT-5 / Gemini 2.5 Flash will use this context to generate unique bodies.</p>
                         </div>
                     </div>
-                            <div class="col-lg-6">
-                                <div class="p-4 bg-light rounded-4 border-0 h-100">
-                                    <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-keyboard me-2"></i>Manual Templates</h6>
-                                    <div class="mb-3">
-                                        <label class="form-label small">Subject</label>
-                                        <input type="text" name="subject_template" class="form-control" value="<?php echo htmlspecialchars($campaign['subject_template'] ?? ''); ?>">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small">Body</label>
-                                        <textarea name="body_template" class="form-control" rows="4"><?php echo htmlspecialchars($campaign['body_template'] ?? ''); ?></textarea>
-                                    </div>
-                                    <div class="small text-muted">
-                                        Available variables:<br>
-                                        <code>[contact_name]</code>, <code>[email]</code>, <code>[company]</code>, <code>[designation]</code>, <code>[company_type]</code>
-                                    </div>
-                                </div>
+                    <div class="col-lg-6">
+                        <div class="p-4 bg-light rounded-4 border-0 h-100">
+                            <span class="section-tag">Direct Control</span>
+                            <h6 class="fw-bold mb-3">Manual Template System</h6>
+                            <div class="mb-3">
+                                <label class="form-label small">Subject Template</label>
+                                <input type="text" name="subject_template" class="form-control bg-white" value="<?php echo htmlspecialchars($campaign['subject_template'] ?? ''); ?>">
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Message Body Template</label>
+                                <textarea name="body_template" class="form-control bg-white" rows="5"><?php echo htmlspecialchars($campaign['body_template'] ?? ''); ?></textarea>
+                            </div>
+                            <div class="p-3 bg-white rounded-3 small">
+                                <span class="fw-bold text-secondary">Injectable Variables:</span><br>
+                                <code>[contact_name]</code>, <code>[email]</code>, <code>[company]</code>, <code>[designation]</code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-4 p-4 border rounded-4 bg-white">
-                    <h6 class="fw-bold mb-3"><i class="fas fa-file-pdf me-2 text-danger"></i>Attachment (Optional)</h6>
+                <div class="mt-5 p-4 border rounded-4 bg-white d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="fas fa-paperclip me-2 text-primary"></i>Master Attachment</h6>
+                        <p class="text-muted small mb-0">PDF or DOCX only. Will be attached to all emails in this campaign.</p>
+                    </div>
                     <div class="d-flex align-items-center gap-3">
-                        <input type="file" name="attachment" class="form-control" accept=".pdf,.docx">
                         <?php if(!empty($campaign['attachment_path'])): ?>
-                            <span class="badge bg-success-subtle text-success px-3 py-2 rounded-3 border border-success border-opacity-25">
-                                <i class="fas fa-paperclip me-1"></i> <?php echo basename($campaign['attachment_path']); ?>
-                            </span>
+                            <div class="badge bg-success-subtle text-success border border-success border-opacity-25 px-3 py-2 rounded-3">
+                                <i class="fas fa-file-pdf me-1"></i> <?php echo basename($campaign['attachment_path']); ?>
+                            </div>
                         <?php endif; ?>
+                        <input type="file" name="attachment" class="form-control" style="width: auto;" accept=".pdf,.docx">
                     </div>
                 </div>
 
                 <div class="mt-5">
-                    <button type="submit" class="btn btn-primary shadow px-5 py-3">Update Campaign Configuration</button>
+                    <button type="submit" class="btn btn-primary shadow-lg">
+                        <i class="fas fa-cloud-arrow-up me-2"></i> Sync Engine Settings
+                    </button>
                 </div>
             </form>
         </div>

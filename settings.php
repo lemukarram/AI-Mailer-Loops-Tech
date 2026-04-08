@@ -104,8 +104,8 @@ $csrf_token = Auth::generateCSRFToken();
                         <div class="mb-3">
                             <label class="form-label">Preferred LLM</label>
                             <select name="preferred_llm" class="form-select">
-                                <option value="openai" <?php echo ($settings['preferred_llm'] ?? '') === 'openai' ? 'selected' : ''; ?>>OpenAI (GPT-4o)</option>
-                                <option value="gemini" <?php echo ($settings['preferred_llm'] ?? '') === 'gemini' ? 'selected' : ''; ?>>Gemini (1.5 Pro)</option>
+                                <option value="openai" <?php echo ($settings['preferred_llm'] ?? '') === 'openai' ? 'selected' : ''; ?>>OpenAI (GPT-5)</option>
+                                <option value="gemini" <?php echo ($settings['preferred_llm'] ?? '') === 'gemini' ? 'selected' : ''; ?>>Gemini (2.5 Flash)</option>
                             </select>
                         </div>
 

@@ -138,7 +138,8 @@ $csrf_token = Auth::generateCSRFToken();
                             <div class="form-text">Cannot exceed the global limit set by the administrator.</div>
                         </div>
 
-                        <div class="d-grid mt-4">
+                        <div class="d-grid mt-4 gap-2">
+                            <button type="button" id="testSmtpBtn" class="btn btn-outline-info">Test SMTP Connection</button>
                             <button type="submit" class="btn btn-primary">Save Settings</button>
                         </div>
                     </form>
@@ -147,6 +148,33 @@ $csrf_token = Auth::generateCSRFToken();
         </div>
     </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#testSmtpBtn').on('click', function() {
+        var btn = $(this);
+        var formData = {
+            csrf_token: $('input[name="csrf_token"]').val(),
+            smtp_host: $('input[name="smtp_host"]').val(),
+            smtp_port: $('input[name="smtp_port"]').val(),
+            smtp_user: $('input[name="smtp_user"]').val(),
+            smtp_pass: $('input[name="smtp_pass"]').val()
+        };
+
+        btn.prop('disabled', true).text('Testing connection...');
+
+        $.post('api/test_smtp.php', formData, function(res) {
+            btn.prop('disabled', false).text('Test SMTP Connection');
+            if(res.success) {
+                alert(res.message);
+            } else {
+                alert('Error: ' + res.error);
+            }
+        }, 'json');
+    });
+});
+</script>
 
 </body>
 </html>

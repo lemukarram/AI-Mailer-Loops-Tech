@@ -37,9 +37,9 @@ foreach ($users_to_process as $user_settings) {
     }
 
     // 3. Get next contacts in queue
-    $limit = min(50, $user_settings['personal_hourly_limit'] - $sent_in_last_hour); // Small batches
-    $stmt = $db->prepare("SELECT * FROM mailing_list WHERE user_id = ? AND status = 'unsent' LIMIT ?");
-    $stmt->execute([$user_id, $limit]);
+    $limit = (int)min(50, $user_settings['personal_hourly_limit'] - $sent_in_last_hour); // Small batches
+    $stmt = $db->prepare("SELECT * FROM mailing_list WHERE user_id = ? AND status = 'unsent' LIMIT $limit");
+    $stmt->execute([$user_id]);
     $queue = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($queue)) {

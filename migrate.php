@@ -73,6 +73,18 @@ $queries = [
         message TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )\",
+    \"CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id INT PRIMARY KEY,
+        full_name VARCHAR(255),
+        phone VARCHAR(50),
+        linkedin_url VARCHAR(255),
+        website_url VARCHAR(255),
+        company_name VARCHAR(255),
+        designation VARCHAR(255),
+        other_info TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )\"
 ];
 

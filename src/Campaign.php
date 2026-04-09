@@ -15,6 +15,16 @@ class Campaign {
 
     public static function generateAIEmail($user_settings, $contact_data, $base_prompt) {
         require_once __DIR__ . '/Crypto.php';
+        require_once __DIR__ . '/Database.php';
+
+        $user_id = $user_settings['user_id'];
+        $db = Database::getInstance()->getConnection();
+        
+        // Fetch sender profile
+        $stmt = $db->prepare("SELECT * FROM user_profiles WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $sender_profile = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
         $provider = $user_settings['preferred_llm'] ?? 'openai';
         $encKey = ($provider === 'openai') ? ($user_settings['openai_api_key'] ?? '') : ($user_settings['gemini_api_key'] ?? '');
         $apiKey = Crypto::decrypt($encKey);
@@ -24,6 +34,6 @@ class Campaign {
         }
 
         $llm = new LLM($provider, $apiKey);
-        return $llm->generateEmail($base_prompt, $contact_data);
+        return $llm->generateEmail($base_prompt, $contact_data, $sender_profile);
     }
 }

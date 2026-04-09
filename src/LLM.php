@@ -16,15 +16,30 @@ class LLM {
         }
     }
 
-    public function generateEmail($basePrompt, $contactInfo) {
+    public function generateEmail($basePrompt, $contactInfo, $senderProfile = []) {
         $systemContext = "Write with a 100% humanized, soft tone. Do not use emojis. Never use the long dash character; use a period instead. Ensure it is clear, catchy, and highly readable so no one can predict it is AI-written. Return a strict JSON object containing 'subject', 'body', and 'footer'.";
         
-        $userPrompt = "Base Prompt: " . $basePrompt . "\n";
-        $userPrompt .= "Contact Name: " . $contactInfo['contact_name'] . "\n";
+        $userPrompt = "### RECIPIENT INFO:\n";
+        $userPrompt .= "Name: " . $contactInfo['contact_name'] . "\n";
         $userPrompt .= "Company: " . ($contactInfo['company'] ?? 'N/A') . "\n";
         $userPrompt .= "Designation: " . ($contactInfo['designation'] ?? 'N/A') . "\n";
-        $userPrompt .= "Company Type: " . ($contactInfo['company_type'] ?? 'N/A') . "\n";
+        $userPrompt .= "Company Type: " . ($contactInfo['company_type'] ?? 'N/A') . "\n\n";
+
+        if (!empty($senderProfile)) {
+            $userPrompt .= "### SENDER INFO (YOU):\n";
+            $userPrompt .= "Name: " . ($senderProfile['full_name'] ?? 'N/A') . "\n";
+            $userPrompt .= "Position: " . ($senderProfile['designation'] ?? 'N/A') . "\n";
+            $userPrompt .= "Company: " . ($senderProfile['company_name'] ?? 'N/A') . "\n";
+            $userPrompt .= "LinkedIn: " . ($senderProfile['linkedin_url'] ?? 'N/A') . "\n";
+            $userPrompt .= "Website: " . ($senderProfile['website_url'] ?? 'N/A') . "\n";
+            $userPrompt .= "Phone: " . ($senderProfile['phone'] ?? 'N/A') . "\n";
+            $userPrompt .= "Context: " . ($senderProfile['other_info'] ?? 'N/A') . "\n\n";
+        }
         
+        $userPrompt .= "### INSTRUCTION:\n";
+        $userPrompt .= $basePrompt . "\n";
+        $userPrompt .= "Focus on the recipient's name and company while authentically using the sender's details for the closing/signature. If a sender detail is 'N/A', do not mention it.";
+
         if ($this->provider === 'openai') {
             return $this->callOpenAI($systemContext, $userPrompt);
         } else {

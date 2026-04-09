@@ -224,6 +224,11 @@ $csrf_token = Auth::generateCSRFToken();
                 </a>
             </div>
             <div class="nav-item">
+                <a href="logs.php" class="nav-link">
+                    <i class="fas fa-list-ul"></i> Logs
+                </a>
+            </div>
+            <div class="nav-item">
                 <a href="settings.php" class="nav-link">
                     <i class="fas fa-gear"></i> Settings
                 </a>

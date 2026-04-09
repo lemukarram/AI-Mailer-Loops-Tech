@@ -90,6 +90,7 @@ $csrf_token = Auth::generateCSRFToken();
         <div class="nav-menu mt-2">
             <a href="index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
             <a href="campaigns.php" class="nav-link active"><i class="fas fa-bullhorn"></i> Campaigns</a>
+            <a href="logs.php" class="nav-link"><i class="fas fa-list-ul"></i> Logs</a>
             <a href="settings.php" class="nav-link"><i class="fas fa-gear"></i> Settings</a>
             <?php if ($user_role === 'admin'): ?><a href="admin/users.php" class="nav-link"><i class="fas fa-user-shield"></i> Admin Panel</a><?php endif; ?>
             <a href="logout.php" class="nav-link text-danger mt-5"><i class="fas fa-right-from-bracket"></i> Logout</a>

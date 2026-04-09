@@ -39,4 +39,14 @@ class Database {
         }
         return $this->conn;
     }
+
+    public static function log($message, $type = 'info', $user_id = null) {
+        try {
+            $db = self::getInstance()->getConnection();
+            $stmt = $db->prepare("INSERT INTO logs (user_id, type, message) VALUES (?, ?, ?)");
+            $stmt->execute([$user_id, $type, $message]);
+        } catch (Exception $e) {
+            error_log("Logging error: " . $e->getMessage());
+        }
+    }
 }

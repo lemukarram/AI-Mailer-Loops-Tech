@@ -58,8 +58,10 @@ $csrf_token = Auth::generateCSRFToken();
         <div class="nav-menu">
             <a href="../index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
             <a href="../campaigns.php" class="nav-link"><i class="fas fa-bullhorn"></i> Campaigns</a>
+            <a href="../logs.php" class="nav-link"><i class="fas fa-list-ul"></i> My Logs</a>
             <a href="../settings.php" class="nav-link"><i class="fas fa-gear"></i> Settings</a>
             <a href="users.php" class="nav-link active"><i class="fas fa-user-shield"></i> Admin Panel</a>
+            <a href="logs.php" class="nav-link"><i class="fas fa-terminal"></i> System Logs</a>
             <a href="../logout.php" class="nav-link text-danger mt-5"><i class="fas fa-right-from-bracket"></i> Logout</a>
         </div>
     </nav>

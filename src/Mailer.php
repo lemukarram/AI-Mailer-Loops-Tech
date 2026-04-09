@@ -51,7 +51,9 @@ class Mailer {
         $this->getResponse($socket, "220");
 
         // Say Hello
-        fwrite($socket, "EHLO " . ($_SERVER['SERVER_NAME'] ?? 'localhost') . "\r\n");
+        $hostname = (isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : gethostname();
+        if (!$hostname) $hostname = 'localhost';
+        fwrite($socket, "EHLO " . $hostname . "\r\n");
         $this->getResponse($socket, "250");
 
         // TLS if using 587

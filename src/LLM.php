@@ -17,7 +17,7 @@ class LLM {
     }
 
     public function generateEmail($basePrompt, $contactInfo, $senderProfile = []) {
-        $systemContext = "Write with a 100% humanized, soft tone. Do not use emojis. Never use the long dash character; use a period instead. Ensure it is clear, catchy, and highly readable so no one can predict it is AI-written. Return a strict JSON object containing 'subject', 'body', and 'footer'. VERY IMPORTANT: The 'footer' MUST use actual newline characters (\\n) to separate details like Name, Title, and Phone. Do not put everything on one line.";
+        $systemContext = "Write with a 100% humanized, soft tone. Do not use emojis. Never use the long dash character; use a period instead. Ensure it is clear, catchy, and highly readable so no one can predict it is AI-written. Return a strict JSON object containing 'subject', 'body', and 'footer'. VERY IMPORTANT: The 'footer' MUST use the sequence '[BR]' (without quotes) to separate details like Name, Title, and Phone. Each detail MUST be on its own line using this [BR] separator.";
         
         $userPrompt = "### RECIPIENT INFO:\n";
         $userPrompt .= "Name: " . $contactInfo['contact_name'] . "\n";
@@ -51,7 +51,7 @@ class LLM {
         
         $userPrompt .= "### INSTRUCTION:\n";
         $userPrompt .= $basePrompt . "\n";
-        $userPrompt .= "Focus on the recipient's name and company while authentically using the sender's details for the closing/signature. Ensure the footer/signature is professional and formatted with one detail per line using newlines. If a sender detail is 'N/A', do not mention it.";
+        $userPrompt .= "Focus on the recipient's name and company while authentically using the sender's details for the closing/signature. Ensure the footer/signature is professional and formatted with one detail per line by using '[BR]' as the line separator. If a sender detail is 'N/A', do not mention it.";
 
         if ($this->provider === 'openai') {
             return $this->callOpenAI($systemContext, $userPrompt);

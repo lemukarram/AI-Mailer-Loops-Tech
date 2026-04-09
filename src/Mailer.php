@@ -18,6 +18,9 @@ class Mailer {
      * Supports attachments and multipart/mixed content.
      */
     public function send($to, $subject, $body, $footer = '', $attachmentPath = null) {
+        // AI might return [BR] for line breaks in footer, convert to real newlines
+        $footer = str_replace(['[BR]', '[br]'], "\n", $footer);
+        
         $fullBody = $body . "\n\n" . $footer;
         $htmlBody = nl2br(htmlspecialchars($fullBody));
         $boundary = md5(time());

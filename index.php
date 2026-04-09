@@ -449,14 +449,13 @@ $(document).ready(function() {
                 className: 'text-end',
                 render: function(data, type, row) {
                     return `
-                        <div class="dropdown">
-                            <button class="btn btn-light btn-sm rounded-3 px-3" data-bs-toggle="dropdown">
-                                <i class="fas fa-ellipsis-vertical"></i>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button class="btn btn-light btn-sm rounded-3 px-3 generate-ai-btn" data-id="${row.id}" title="AI Generate">
+                                <i class="fas fa-wand-sparkles text-primary me-1"></i> AI
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
-                                <li><a class="dropdown-item py-2 generate-ai-btn" href="#" data-id="${row.id}"><i class="fas fa-wand-sparkles text-primary me-2"></i> AI Generate</a></li>
-                                <li><a class="dropdown-item py-2 review-manual-btn" href="#" data-id="${row.id}"><i class="fas fa-pen-to-square text-secondary me-2"></i> Manual Edit</a></li>
-                            </ul>
+                            <button class="btn btn-light btn-sm rounded-3 px-3 review-manual-btn" data-id="${row.id}" title="Manual Edit">
+                                <i class="fas fa-pen-to-square text-secondary me-1"></i> Edit
+                            </button>
                         </div>
                     `;
                 }

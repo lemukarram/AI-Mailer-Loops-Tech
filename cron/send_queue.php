@@ -90,7 +90,8 @@ foreach ($users_to_process as $user_settings) {
                 $footer = Campaign::replaceVariables($campaign['footer_template'], $contact);
             }
 
-            $sent = $mailer->send($contact['email'], $subject, $body, $footer);
+            $attachment = !empty($campaign['attachment_path']) ? __DIR__ . '/../' . $campaign['attachment_path'] : null;
+            $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment);
             
             if ($sent) {
                 $db->prepare("UPDATE mailing_list SET status = 'sent', last_sent_at = NOW() WHERE id = ?")->execute([$contact['id']]);

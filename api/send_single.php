@@ -45,7 +45,14 @@ try {
 
     $smtp_pass = Crypto::decrypt($settings['smtp_pass']);
     $mailer = new Mailer($settings['smtp_host'], $settings['smtp_port'], $settings['smtp_user'], $smtp_pass);
-    $sent = $mailer->send($contact['email'], $subject, $body, $footer);
+
+    // Get attachment from campaign
+    $stmt = $db->prepare("SELECT attachment_path FROM campaigns WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$user_id]);
+    $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
+    $attachment = ($campaign && !empty($campaign['attachment_path'])) ? __DIR__ . '/../' . $campaign['attachment_path'] : null;
+
+    $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment);
 
     if ($sent) {
         $stmt = $db->prepare("UPDATE mailing_list SET status = 'sent', last_sent_at = NOW() WHERE id = ?");

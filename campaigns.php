@@ -129,12 +129,8 @@ $csrf_token = Auth::generateCSRFToken();
                             <span class="section-tag">AI Powered</span>
                             <h6 class="fw-bold mb-3">AI Context Prompt</h6>
                             <textarea name="base_prompt" class="form-control bg-white" rows="10" placeholder="e.g. Write a soft, humanized outreach email..."><?php 
-                                echo htmlspecialchars($campaign['base_prompt'] ?? "I am writing to express my strong interest in joining [company] as a [designation]. I have been following your work and am impressed by your recent projects. Given my background and experience, I believe I would be a valuable asset to your team. 
-
-Please review my attached resume and feel free to reach out if you have any questions or would like to discuss my qualifications further. I look forward to hearing from you.
-
-Best regards,
-[Your Name]"); 
+                                $default_prompt = "I am writing to express my interest in joining [company] as a [designation]. I've been impressed by your team's work in [industry] and would love to contribute my skills to your future projects.\n\nCould we hop on a quick 5-minute call next week to discuss how my background aligns with your current needs?";
+                                echo htmlspecialchars(!empty($campaign['base_prompt']) ? $campaign['base_prompt'] : $default_prompt); 
                             ?></textarea>
                             <p class="mt-3 small text-muted"><i class="fas fa-info-circle me-1"></i> GPT-5 / Gemini 2.5 Flash will use this context to generate unique bodies.</p>
                         </div>

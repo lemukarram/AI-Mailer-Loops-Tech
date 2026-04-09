@@ -17,7 +17,7 @@ class LLM {
     }
 
     public function generateEmail($basePrompt, $contactInfo, $senderProfile = []) {
-        $systemContext = "Write with a 100% humanized, soft tone. Do not use emojis. Never use the long dash character; use a period instead. Ensure it is clear, catchy, and highly readable so no one can predict it is AI-written. Return a strict JSON object containing 'subject', 'body', and 'footer'.";
+        $systemContext = "Write with a 100% humanized, soft tone. Do not use emojis. Never use the long dash character; use a period instead. Ensure it is clear, catchy, and highly readable so no one can predict it is AI-written. Return a strict JSON object containing 'subject', 'body', and 'footer'. VERY IMPORTANT: The 'footer' MUST use actual newline characters (\\n) to separate details like Name, Title, and Phone. Do not put everything on one line.";
         
         $userPrompt = "### RECIPIENT INFO:\n";
         $userPrompt .= "Name: " . $contactInfo['contact_name'] . "\n";
@@ -27,18 +27,31 @@ class LLM {
 
         if (!empty($senderProfile)) {
             $userPrompt .= "### SENDER INFO (YOU):\n";
-            $userPrompt .= "Name: " . ($senderProfile['full_name'] ?? 'N/A') . "\n";
-            $userPrompt .= "Position: " . ($senderProfile['designation'] ?? 'N/A') . "\n";
-            $userPrompt .= "Company: " . ($senderProfile['company_name'] ?? 'N/A') . "\n";
-            $userPrompt .= "LinkedIn: " . ($senderProfile['linkedin_url'] ?? 'N/A') . "\n";
-            $userPrompt .= "Website: " . ($senderProfile['website_url'] ?? 'N/A') . "\n";
-            $userPrompt .= "Phone: " . ($senderProfile['phone'] ?? 'N/A') . "\n";
-            $userPrompt .= "Context: " . ($senderProfile['other_info'] ?? 'N/A') . "\n\n";
+
+            // Define the map of Label => Key
+            $fields = [
+                "Name"     => $senderProfile['full_name'] ?? null,
+                "Position" => $senderProfile['designation'] ?? null,
+                "Company"  => $senderProfile['company_name'] ?? null,
+                "LinkedIn" => $senderProfile['linkedin_url'] ?? null,
+                "Website"  => $senderProfile['website_url'] ?? null,
+                "Phone"    => $senderProfile['phone'] ?? null,
+                "Context"  => $senderProfile['other_info'] ?? null,
+            ];
+
+            foreach ($fields as $label => $value) {
+                // Only append if the value is not empty and not 'N/A'
+                if (!empty($value) && $value !== 'N/A') {
+                    $userPrompt .= "$label: $value\n";
+                }
+            }
+
+            $userPrompt .= "\n";
         }
         
         $userPrompt .= "### INSTRUCTION:\n";
         $userPrompt .= $basePrompt . "\n";
-        $userPrompt .= "Focus on the recipient's name and company while authentically using the sender's details for the closing/signature. If a sender detail is 'N/A', do not mention it.";
+        $userPrompt .= "Focus on the recipient's name and company while authentically using the sender's details for the closing/signature. Ensure the footer/signature is professional and formatted with one detail per line using newlines. If a sender detail is 'N/A', do not mention it.";
 
         if ($this->provider === 'openai') {
             return $this->callOpenAI($systemContext, $userPrompt);

@@ -4,7 +4,6 @@ class LLM {
     private $apiKey;
     private $model;
     private $provider;
-    private $mockResponse = null;
 
     public function __construct($provider, $apiKey, $model = null) {
         $this->provider = $provider;

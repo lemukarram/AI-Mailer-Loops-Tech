@@ -54,7 +54,7 @@ $queries = [
         last_sent_at TIMESTAMP NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )",
-    \"CREATE TABLE IF NOT EXISTS campaigns (
+    "CREATE TABLE IF NOT EXISTS campaigns (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT,
         title VARCHAR(255),
@@ -65,16 +65,16 @@ $queries = [
         attachment_path VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )\",
-    \"CREATE TABLE IF NOT EXISTS logs (
+    )",
+    "CREATE TABLE IF NOT EXISTS logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NULL,
         type ENUM('info', 'error', 'warning') DEFAULT 'info',
         message TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )\",
-    \"CREATE TABLE IF NOT EXISTS user_profiles (
+    )",
+    "CREATE TABLE IF NOT EXISTS user_profiles (
         user_id INT PRIMARY KEY,
         full_name VARCHAR(255),
         phone VARCHAR(50),
@@ -85,7 +85,7 @@ $queries = [
         other_info TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )\"
+    )"
 ];
 
 foreach ($queries as $sql) {

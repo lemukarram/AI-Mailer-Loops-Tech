@@ -34,6 +34,7 @@ $queries = [
         openai_api_key VARCHAR(255),
         gemini_api_key VARCHAR(255),
         preferred_llm ENUM('openai', 'gemini') DEFAULT 'openai',
+        ai_enabled TINYINT(1) DEFAULT 1,
         smtp_host VARCHAR(255),
         smtp_port INT,
         smtp_user VARCHAR(255),
@@ -85,7 +86,8 @@ $queries = [
         other_info TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )"
+    )",
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_enabled TINYINT(1) DEFAULT 1 AFTER preferred_llm"
 ];
 
 foreach ($queries as $sql) {

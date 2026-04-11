@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $smtp_user = $_POST['smtp_user'] ?? '';
         $smtp_pass = $_POST['smtp_pass'] ?? '';
         $personal_limit = (int)($_POST['personal_hourly_limit'] ?? 50);
+        $ai_enabled = isset($_POST['ai_enabled']) ? 1 : 0;
 
         $stmt = $db->prepare("SELECT * FROM user_settings WHERE user_id = ?");
         $stmt->execute([$user_id]);
@@ -30,14 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $enc_smtp_pass = !empty($smtp_pass) ? Crypto::encrypt($smtp_pass) : ($existing['smtp_pass'] ?? null);
 
         try {
-            $stmt = $db->prepare("INSERT INTO user_settings (user_id, openai_api_key, gemini_api_key, preferred_llm, smtp_host, smtp_port, smtp_user, smtp_pass, personal_hourly_limit) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) 
+            $stmt = $db->prepare("INSERT INTO user_settings (user_id, openai_api_key, gemini_api_key, preferred_llm, ai_enabled, smtp_host, smtp_port, smtp_user, smtp_pass, personal_hourly_limit) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
                                  ON DUPLICATE KEY UPDATE 
                                  openai_api_key = VALUES(openai_api_key), gemini_api_key = VALUES(gemini_api_key), 
-                                 preferred_llm = VALUES(preferred_llm), smtp_host = VALUES(smtp_host), 
+                                 preferred_llm = VALUES(preferred_llm), ai_enabled = VALUES(ai_enabled), 
+                                 smtp_host = VALUES(smtp_host), 
                                  smtp_port = VALUES(smtp_port), smtp_user = VALUES(smtp_user), 
                                  smtp_pass = VALUES(smtp_pass), personal_hourly_limit = VALUES(personal_hourly_limit)");
-            $stmt->execute([$user_id, $enc_openai, $enc_gemini, $preferred_llm, $smtp_host, $smtp_port, $smtp_user, $enc_smtp_pass, $personal_limit]);
+            $stmt->execute([$user_id, $enc_openai, $enc_gemini, $preferred_llm, $ai_enabled, $smtp_host, $smtp_port, $smtp_user, $enc_smtp_pass, $personal_limit]);
             $message = "System preferences updated successfully.";
         } catch (PDOException $e) { $error = "Update failed: " . $e->getMessage(); }
     }
@@ -143,6 +145,13 @@ $csrf_token = Auth::generateCSRFToken();
                     <div class="col-md-6">
                         <label class="form-label">Personal Hourly Limit</label>
                         <input type="number" name="personal_hourly_limit" class="form-control" value="<?php echo htmlspecialchars($settings['personal_hourly_limit'] ?? 50); ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label d-block">Bulk AI Generation</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="ai_enabled" id="ai_enabled" style="width: 3rem; height: 1.5rem;" <?php echo ($settings['ai_enabled'] ?? 1) ? 'checked' : ''; ?>>
+                            <label class="form-check-label ms-2 pt-1 fw-500" for="ai_enabled">Enable AI for automated queue</label>
+                        </div>
                     </div>
                 </div>
 

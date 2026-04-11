@@ -77,7 +77,7 @@ foreach ($users_to_process as $user_settings) {
         }
 
         try {
-            if (!empty($campaign['base_prompt'])) {
+            if ($user_settings['ai_enabled'] && !empty($campaign['base_prompt'])) {
                 // AI Mode
                 $aiEmail = Campaign::generateAIEmail($user_settings, $contact, $campaign['base_prompt']);
                 $subject = $aiEmail['subject'];

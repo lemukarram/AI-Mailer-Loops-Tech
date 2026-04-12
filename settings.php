@@ -66,6 +66,7 @@ $csrf_token = Auth::generateCSRFToken();
         .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
         .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
         .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; transition: 0.2s; }
+        .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
         .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
         .nav-link.active { background: var(--primary) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
         #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; }

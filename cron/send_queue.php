@@ -13,6 +13,7 @@ $db = Database::getInstance()->getConnection();
 
 // Log start of cron
 Database::log("Cron job started", 'info');
+Database::cleanupLogs();
 
 // 1. Get all users with started queues
 $stmt = $db->query("SELECT * FROM user_settings WHERE queue_status = 'started'");

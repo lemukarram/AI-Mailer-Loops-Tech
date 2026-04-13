@@ -7,8 +7,8 @@ $user_id = Auth::getUserId();
 $user_role = $_SESSION['user_role'];
 $db = Database::getInstance()->getConnection();
 
-// Fetch logs for the current user
-$stmt = $db->prepare("SELECT * FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 100");
+// Fetch logs for the current user from the last 24 hours
+$stmt = $db->prepare("SELECT * FROM logs WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY created_at DESC LIMIT 500");
 $stmt->execute([$user_id]);
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

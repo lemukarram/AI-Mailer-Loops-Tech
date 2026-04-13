@@ -49,4 +49,13 @@ class Database {
             error_log("Logging error: " . $e->getMessage());
         }
     }
+
+    public static function cleanupLogs() {
+        try {
+            $db = self::getInstance()->getConnection();
+            $db->exec("DELETE FROM logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+        } catch (Exception $e) {
+            error_log("Log cleanup error: " . $e->getMessage());
+        }
+    }
 }

@@ -5,8 +5,8 @@ require_once __DIR__ . '/../src/Database.php';
 Auth::requireAdmin();
 $db = Database::getInstance()->getConnection();
 
-// Fetch all logs
-$stmt = $db->query("SELECT l.*, u.email as user_email FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC LIMIT 500");
+// Fetch all logs from the last 24 hours
+$stmt = $db->query("SELECT l.*, u.email as user_email FROM logs l LEFT JOIN users u ON l.user_id = u.id WHERE l.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY l.created_at DESC LIMIT 1000");
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>

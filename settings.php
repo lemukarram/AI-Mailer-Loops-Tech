@@ -62,25 +62,38 @@ $csrf_token = Auth::generateCSRFToken();
     <style>
         :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
+        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); z-index: 1040; transition: all 0.3s; }
         .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
         .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
         .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; transition: 0.2s; }
         .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
         .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
         .nav-link.active { background: var(--primary) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-        #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; }
+        #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; transition: all 0.3s; }
         .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2.5rem; }
         .form-label { font-weight: 600; color: #475569; }
         .form-control, .form-select { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
         .btn-primary { background: var(--primary); border: none; border-radius: 12px; padding: 0.8rem 2rem; font-weight: 700; }
         .btn-outline-secondary { border-radius: 12px; padding: 0.8rem 2rem; border: 2px solid #e2e8f0; font-weight: 600; }
+
+        @media (max-width: 992px) {
+            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); transition: all 0.3s; z-index: 1040; }
+            #sidebar.mobile-show { margin-left: 0; }
+            #content { margin-left: 0 !important; padding: 1.5rem !important; }
+            .sidebar-close { display: block !important; }
+            .glass-card { padding: 1.5rem !important; }
+        }
+        .sidebar-close {
+            display: none; position: absolute; right: 1rem; top: 1.5rem;
+            font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0.5rem; z-index: 1050;
+        }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
     <nav id="sidebar">
+        <div class="sidebar-close"><i class="fas fa-times"></i></div>
         <a href="index.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
         <div class="nav-menu mt-2">
             <a href="index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
@@ -94,6 +107,10 @@ $csrf_token = Auth::generateCSRFToken();
     </nav>
 
     <div id="content" class="flex-grow-1">
+        <div class="d-lg-none p-3 bg-white border-bottom mb-4 d-flex align-items-center justify-content-between">
+            <button id="toggleSidebar" class="btn btn-light"><i class="fas fa-bars"></i></button>
+            <h6 class="mb-0 fw-bold">AI Mailer</h6>
+        </div>
         <div class="glass-card">
             <h4 class="fw-bold mb-4 text-dark">System Configurations</h4>
             <?php if($message): ?><div class="alert alert-success rounded-4 border-0 shadow-sm"><?php echo $message; ?></div><?php endif; ?>
@@ -168,6 +185,9 @@ $csrf_token = Auth::generateCSRFToken();
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
+    $('#toggleSidebar, .sidebar-close').on('click', function() {
+        $('#sidebar').toggleClass('mobile-show');
+    });
     $('#testSmtpBtn').on('click', function() {
         var btn = $(this);
         var formData = {

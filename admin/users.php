@@ -9,9 +9,55 @@ $user_role = $_SESSION['user_role'];
 $message = ''; $error = '';
 
 if (isset($_GET['toggle_id'])) {
-    $stmt = $db->prepare("UPDATE users SET status = IF(status='active', 'inactive', 'active') WHERE id = ? AND role != 'admin'");
-    $stmt->execute([$_GET['toggle_id']]);
-    $message = "User status synchronized successfully.";
+    $toggle_id = (int)$_GET['toggle_id'];
+    
+    // Fetch user before updating to know current status
+    $stmt = $db->prepare("SELECT email, status FROM users WHERE id = ? AND role != 'admin'");
+    $stmt->execute([$toggle_id]);
+    $user_to_toggle = $stmt->fetch();
+    
+    if ($user_to_toggle) {
+        $new_status = ($user_to_toggle['status'] === 'active' ? 'inactive' : 'active');
+        $stmt = $db->prepare("UPDATE users SET status = ? WHERE id = ? AND role != 'admin'");
+        $stmt->execute([$new_status, $toggle_id]);
+        
+        $message = "User status synchronized successfully.";
+        
+        // Notify the user via email
+        require_once __DIR__ . '/../src/Mailer.php';
+        require_once __DIR__ . '/../src/Crypto.php';
+        
+        // Fetch current admin's SMTP settings
+        $admin_id = Auth::getUserId();
+        $stmt = $db->prepare("SELECT * FROM user_settings WHERE user_id = ?");
+        $stmt->execute([$admin_id]);
+        $admin_smtp = $stmt->fetch();
+        
+        if ($admin_smtp && !empty($admin_smtp['smtp_host'])) {
+            try {
+                $mailer = new Mailer(
+                    $admin_smtp['smtp_host'],
+                    $admin_smtp['smtp_port'],
+                    $admin_smtp['smtp_user'],
+                    Crypto::decrypt($admin_smtp['smtp_pass'])
+                );
+                
+                $status_msg = ($new_status === 'active') ? "ACTIVATED" : "DEACTIVATED";
+                $subject = "Account Alert: Your Access Status Changed";
+                $body = "Hello,\n\nThis is an automated notification to inform you that your account status on AI Mailer has been changed to: **$status_msg**.\n\nIf you have any questions, please contact the support team.\n\nRegards,\nAI Mailer Administration";
+                
+                if ($mailer->send($user_to_toggle['email'], $subject, $body)) {
+                    $message .= " Notification email sent.";
+                } else {
+                    $error = "Status updated, but failed to send notification email.";
+                }
+            } catch (Exception $e) {
+                $error = "Status updated, but email error occurred: " . $e->getMessage();
+            }
+        } else {
+            $message .= " (Note: Notification email NOT sent because your SMTP is not configured in Settings)";
+        }
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_limits'])) {
@@ -38,22 +84,35 @@ $csrf_token = Auth::generateCSRFToken();
     <style>
         :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
+        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); z-index: 1040; transition: all 0.3s; }
         .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
         .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; }
         .nav-link { display: flex; align-items: center; padding: 0.85rem 1.25rem; color: #94a3b8; text-decoration: none; border-radius: 12px; margin: 0 1rem 0.5rem; transition: 0.2s; }
         .nav-link.active { background: var(--primary) !important; color: #fff !important; }
-        #content { margin-left: var(--sidebar-width); padding: 3rem; }
+        #content { margin-left: var(--sidebar-width); padding: 3rem; transition: all 0.3s; }
         .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2rem; }
         .form-control { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
         .btn-primary { background: var(--primary); border: none; border-radius: 12px; font-weight: 700; }
         .table thead th { background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1.25rem 1rem; border: none; }
+
+        @media (max-width: 992px) {
+            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); transition: all 0.3s; z-index: 1040; }
+            #sidebar.mobile-show { margin-left: 0; }
+            #content { margin-left: 0 !important; padding: 1.5rem !important; }
+            .sidebar-close { display: block !important; }
+            .glass-card { padding: 1.5rem !important; }
+        }
+        .sidebar-close {
+            display: none; position: absolute; right: 1rem; top: 1.5rem;
+            font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0.5rem; z-index: 1050;
+        }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
     <nav id="sidebar">
+        <div class="sidebar-close"><i class="fas fa-times"></i></div>
         <a href="../index.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
         <div class="nav-menu">
             <a href="../index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
@@ -67,6 +126,10 @@ $csrf_token = Auth::generateCSRFToken();
     </nav>
 
     <div id="content" class="flex-grow-1">
+        <div class="d-lg-none p-3 bg-white border-bottom mb-4 d-flex align-items-center justify-content-between">
+            <button id="toggleSidebar" class="btn btn-light"><i class="fas fa-bars"></i></button>
+            <h6 class="mb-0 fw-bold">AI Mailer</h6>
+        </div>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="fw-bold m-0 text-dark">Platform Governance</h3>
             <span class="badge bg-dark rounded-pill px-3 py-2">Master Admin</span>
@@ -103,41 +166,51 @@ $csrf_token = Auth::generateCSRFToken();
                     <div class="p-4 border-bottom bg-light bg-opacity-50">
                         <h6 class="fw-bold m-0"><i class="fas fa-users me-2"></i>User Management</h6>
                     </div>
-                    <table class="table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Account</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($users as $user): ?>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
                                 <tr>
-                                    <td><div class="fw-bold"><?php echo htmlspecialchars($user['email']); ?></div><small class="text-muted">Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?></small></td>
-                                    <td><span class="badge bg-secondary-subtle text-secondary px-3"><?php echo strtoupper($user['role']); ?></span></td>
-                                    <td>
-                                        <span class="badge <?php echo $user['status'] === 'active' ? 'bg-success' : 'bg-danger'; ?> rounded-pill px-3">
-                                            <?php echo strtoupper($user['status']); ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <?php if ($user['role'] !== 'admin'): ?>
-                                            <a href="?toggle_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-light border rounded-3 px-3">
-                                                <i class="fas fa-repeat me-1"></i> Toggle
-                                            </a>
-                                        <?php endif; ?>
-                                    </td>
+                                    <th>Account</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($users as $user): ?>
+                                    <tr>
+                                        <td><div class="fw-bold"><?php echo htmlspecialchars($user['email']); ?></div><small class="text-muted text-nowrap">Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?></small></td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary px-3"><?php echo strtoupper($user['role']); ?></span></td>
+                                        <td>
+                                            <span class="badge <?php echo $user['status'] === 'active' ? 'bg-success' : 'bg-danger'; ?> rounded-pill px-3">
+                                                <?php echo strtoupper($user['status']); ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <?php if ($user['role'] !== 'admin'): ?>
+                                                <a href="?toggle_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-light border rounded-3 px-3">
+                                                    <i class="fas fa-repeat me-1"></i> Toggle
+                                                </a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#toggleSidebar, .sidebar-close').on('click', function() {
+        $('#sidebar').toggleClass('mobile-show');
+    });
+});
+</script>
 </body>
 </html>

@@ -69,7 +69,7 @@ $csrf_token = Auth::generateCSRFToken();
             min-height: 100vh;
             position: fixed;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1030;
+            z-index: 1040;
             box-shadow: 4px 0 10px rgba(0,0,0,0.1);
         }
         
@@ -95,6 +95,19 @@ $csrf_token = Auth::generateCSRFToken();
             margin-right: 12px;
             box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
         }
+
+        .sidebar-close {
+            display: none;
+            position: absolute;
+            right: 1rem;
+            top: 2.5rem;
+            font-size: 1.25rem;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: 0.2s;
+        }
+        .sidebar-close:hover { color: #fff; }
         
         .nav-menu { padding: 0 1rem; }
         .nav-item { margin-bottom: 0.5rem; }
@@ -198,7 +211,20 @@ $csrf_token = Auth::generateCSRFToken();
         @media (max-width: 992px) {
             #sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
             #sidebar.mobile-show { margin-left: 0; }
-            #content { margin-left: 0; }
+            #content { margin-left: 0 !important; }
+            .sidebar-close { display: block; }
+            .top-bar { padding: 1rem; }
+            .p-4.p-lg-5 { padding: 1.5rem !important; }
+            .card-stat { padding: 1.25rem; }
+            .data-card { padding: 1rem; border-radius: 16px; overflow-x: auto; }
+        }
+        
+        @media (max-width: 576px) {
+            .top-bar { flex-wrap: wrap; gap: 0.75rem !important; }
+            .top-bar .d-flex.gap-3 { width: 100%; justify-content: space-between; gap: 0.5rem !important; }
+            .btn-action { padding: 0.5rem 1rem; font-size: 0.85rem; flex: 1; }
+            .stat-icon { width: 44px; height: 44px; font-size: 1.2rem; }
+            .fs-3 { font-size: 1.5rem !important; }
         }
     </style>
 </head>
@@ -207,6 +233,7 @@ $csrf_token = Auth::generateCSRFToken();
 <div class="d-flex">
     <!-- Sidebar -->
     <nav id="sidebar">
+        <div class="sidebar-close"><i class="fas fa-times"></i></div>
         <a href="index.php" class="sidebar-brand">
             <i class="fas fa-inbox"></i>
             <span>AI Mailer</span>
@@ -414,7 +441,7 @@ $csrf_token = Auth::generateCSRFToken();
 
 <script>
 $(document).ready(function() {
-    $('#toggleSidebar').on('click', function() {
+    $('#toggleSidebar, .sidebar-close').on('click', function() {
         $('#sidebar').toggleClass('mobile-show');
     });
 

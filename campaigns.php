@@ -62,7 +62,7 @@ $csrf_token = Auth::generateCSRFToken();
         :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #334155; }
         
-        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
+        #sidebar { width: var(--sidebar-width); background: var(--dark); color: #fff; min-height: 100vh; position: fixed; box-shadow: 4px 0 10px rgba(0,0,0,0.1); z-index: 1040; transition: all 0.3s; }
         .sidebar-brand { padding: 2.5rem 1.5rem; display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
         .sidebar-brand i { background: var(--primary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-right: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
         
@@ -71,7 +71,7 @@ $csrf_token = Auth::generateCSRFToken();
         .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
         .nav-link.active { background: var(--primary) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
-        #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; }
+        #content { margin-left: var(--sidebar-width); padding: 3rem; min-height: 100vh; transition: all 0.3s; }
         .glass-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); padding: 2.5rem; }
         .form-label { font-weight: 600; color: #475569; font-size: 0.9rem; margin-bottom: 0.5rem; }
         .form-control { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; transition: 0.3s; }
@@ -80,12 +80,25 @@ $csrf_token = Auth::generateCSRFToken();
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
         
         .section-tag { background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 0.4rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 1rem; }
+
+        @media (max-width: 992px) {
+            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); transition: all 0.3s; z-index: 1040; }
+            #sidebar.mobile-show { margin-left: 0; }
+            #content { margin-left: 0 !important; padding: 1.5rem !important; }
+            .sidebar-close { display: block !important; }
+            .glass-card { padding: 1.5rem !important; }
+        }
+        .sidebar-close {
+            display: none; position: absolute; right: 1rem; top: 1.5rem;
+            font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0.5rem; z-index: 1050;
+        }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
     <nav id="sidebar">
+        <div class="sidebar-close"><i class="fas fa-times"></i></div>
         <a href="index.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
         <div class="nav-menu mt-2">
             <a href="index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
@@ -99,6 +112,10 @@ $csrf_token = Auth::generateCSRFToken();
     </nav>
 
     <div id="content" class="flex-grow-1">
+        <div class="d-lg-none p-3 bg-white border-bottom mb-4 d-flex align-items-center justify-content-between">
+            <button id="toggleSidebar" class="btn btn-light"><i class="fas fa-bars"></i></button>
+            <h6 class="mb-0 fw-bold">AI Mailer</h6>
+        </div>
         <div class="glass-card">
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
@@ -180,5 +197,13 @@ $csrf_token = Auth::generateCSRFToken();
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#toggleSidebar, .sidebar-close').on('click', function() {
+        $('#sidebar').toggleClass('mobile-show');
+    });
+});
+</script>
 </body>
 </html>

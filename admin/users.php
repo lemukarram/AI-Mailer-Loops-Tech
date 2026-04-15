@@ -8,58 +8,6 @@ $user_role = $_SESSION['user_role'];
 
 $message = ''; $error = '';
 
-if (isset($_GET['toggle_id'])) {
-    $toggle_id = (int)$_GET['toggle_id'];
-    
-    // Fetch user before updating to know current status
-    $stmt = $db->prepare("SELECT email, status FROM users WHERE id = ? AND role != 'admin'");
-    $stmt->execute([$toggle_id]);
-    $user_to_toggle = $stmt->fetch();
-    
-    if ($user_to_toggle) {
-        $new_status = ($user_to_toggle['status'] === 'active' ? 'inactive' : 'active');
-        $stmt = $db->prepare("UPDATE users SET status = ? WHERE id = ? AND role != 'admin'");
-        $stmt->execute([$new_status, $toggle_id]);
-        
-        $message = "User status synchronized successfully.";
-        
-        // Notify the user via email
-        require_once __DIR__ . '/../src/Mailer.php';
-        require_once __DIR__ . '/../src/Crypto.php';
-        
-        // Fetch current admin's SMTP settings
-        $admin_id = Auth::getUserId();
-        $stmt = $db->prepare("SELECT * FROM user_settings WHERE user_id = ?");
-        $stmt->execute([$admin_id]);
-        $admin_smtp = $stmt->fetch();
-        
-        if ($admin_smtp && !empty($admin_smtp['smtp_host'])) {
-            try {
-                $mailer = new Mailer(
-                    $admin_smtp['smtp_host'],
-                    $admin_smtp['smtp_port'],
-                    $admin_smtp['smtp_user'],
-                    Crypto::decrypt($admin_smtp['smtp_pass'])
-                );
-                
-                $status_msg = ($new_status === 'active') ? "ACTIVATED" : "DEACTIVATED";
-                $subject = "Account Alert: Your Access Status Changed";
-                $body = "Hello,\n\nThis is an automated notification to inform you that your account status on AI Mailer has been changed to: **$status_msg**.\n\nIf you have any questions, please contact the support team.\n\nRegards,\nAI Mailer Administration";
-                
-                if ($mailer->send($user_to_toggle['email'], $subject, $body)) {
-                    $message .= " Notification email sent.";
-                } else {
-                    $error = "Status updated, but failed to send notification email.";
-                }
-            } catch (Exception $e) {
-                $error = "Status updated, but email error occurred: " . $e->getMessage();
-            }
-        } else {
-            $message .= " (Note: Notification email NOT sent because your SMTP is not configured in Settings)";
-        }
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_limits'])) {
     if (Auth::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         $stmt = $db->prepare("UPDATE admin_limits SET max_emails_per_hour = ?, total_max_emails = ?, max_file_upload_size = ?, max_excel_rows = ? WHERE id = 1");
@@ -68,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_limits'])) {
     }
 }
 
-$users = $db->query("SELECT id, email, role, status, created_at FROM users")->fetchAll(PDO::FETCH_ASSOC);
 $limits = $db->query("SELECT * FROM admin_limits LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 $csrf_token = Auth::generateCSRFToken();
 ?>
@@ -81,6 +28,9 @@ $csrf_token = Auth::generateCSRFToken();
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css" rel="stylesheet">
     <style>
         :root { --primary: #6366f1; --dark: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
@@ -106,6 +56,8 @@ $csrf_token = Auth::generateCSRFToken();
             display: none; position: absolute; right: 1rem; top: 1.5rem;
             font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0.5rem; z-index: 1050;
         }
+        /* Custom Table Styling */
+        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -163,39 +115,31 @@ $csrf_token = Auth::generateCSRFToken();
 
             <div class="col-lg-8">
                 <div class="glass-card p-0 overflow-hidden">
-                    <div class="p-4 border-bottom bg-light bg-opacity-50">
+                    <div class="p-4 border-bottom bg-light bg-opacity-50 d-flex justify-content-between align-items-center">
                         <h6 class="fw-bold m-0"><i class="fas fa-users me-2"></i>User Management</h6>
+                        <div id="bulkActions" class="d-none animate__animated animate__fadeIn">
+                            <div class="d-flex gap-2">
+                                <select id="bulkActionSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="">Bulk Actions...</option>
+                                    <option value="active">Set Active</option>
+                                    <option value="inactive">Set Inactive</option>
+                                    <option value="delete">Delete Selected</option>
+                                </select>
+                                <button id="applyBulkAction" class="btn btn-primary btn-sm px-3">Apply</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table mb-0">
+                    <div class="p-4 table-responsive">
+                        <table id="usersTable" class="table w-100">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAll" class="form-check-input"></th>
                                     <th>Account</th>
                                     <th>Role</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($users as $user): ?>
-                                    <tr>
-                                        <td><div class="fw-bold"><?php echo htmlspecialchars($user['email']); ?></div><small class="text-muted text-nowrap">Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?></small></td>
-                                        <td><span class="badge bg-secondary-subtle text-secondary px-3"><?php echo strtoupper($user['role']); ?></span></td>
-                                        <td>
-                                            <span class="badge <?php echo $user['status'] === 'active' ? 'bg-success' : 'bg-danger'; ?> rounded-pill px-3">
-                                                <?php echo strtoupper($user['status']); ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-end text-nowrap">
-                                            <?php if ($user['role'] !== 'admin'): ?>
-                                                <a href="?toggle_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-light border rounded-3 px-3">
-                                                    <i class="fas fa-repeat me-1"></i> Toggle
-                                                </a>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -205,10 +149,154 @@ $csrf_token = Auth::generateCSRFToken();
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
+
 <script>
 $(document).ready(function() {
+    const csrf_token = '<?php echo $csrf_token; ?>';
+
     $('#toggleSidebar, .sidebar-close').on('click', function() {
         $('#sidebar').toggleClass('mobile-show');
+    });
+
+    const table = $('#usersTable').DataTable({
+        ajax: '../api/admin_users.php',
+        responsive: true,
+        order: [[1, 'desc']],
+        columns: [
+            {
+                data: null,
+                orderable: false,
+                render: function(data, type, row) {
+                    if (row.role === 'admin') return '';
+                    return `<input type="checkbox" class="form-check-input user-checkbox" value="${row.id}">`;
+                }
+            },
+            { 
+                data: 'email',
+                render: function(data, type, row) {
+                    const date = new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return `<div class="fw-bold">${data}</div><small class="text-muted">Joined ${date}</small>`;
+                }
+            },
+            { 
+                data: 'role',
+                render: function(data) {
+                    return `<span class="badge bg-secondary-subtle text-secondary px-3">${data.toUpperCase()}</span>`;
+                }
+            },
+            { 
+                data: 'status',
+                render: function(data) {
+                    const color = data === 'active' ? 'success' : 'danger';
+                    return `<span class="badge bg-${color} rounded-pill px-3">${data.toUpperCase()}</span>`;
+                }
+            },
+            { 
+                data: null,
+                className: 'text-end',
+                render: function(data, type, row) {
+                    if (row.role === 'admin') return '';
+                    return `
+                        <button class="btn btn-sm btn-light border rounded-3 px-3 toggle-status" data-id="${row.id}" data-status="${row.status}">
+                            <i class="fas fa-repeat me-1"></i> Toggle
+                        </button>
+                    `;
+                }
+            }
+        ],
+        language: {
+            search: "",
+            searchPlaceholder: "Search users...",
+            paginate: { next: '<i class="fas fa-chevron-right"></i>', previous: '<i class="fas fa-chevron-left"></i>' }
+        },
+        dom: '<"d-flex justify-content-between align-items-center mb-3"f>rt<"d-flex justify-content-between align-items-center mt-3"ip>',
+    });
+
+    // Select All
+    $('#selectAll').on('change', function() {
+        $('.user-checkbox').prop('checked', $(this).is(':checked'));
+        updateBulkActionsVisibility();
+    });
+
+    $(document).on('change', '.user-checkbox', function() {
+        updateBulkActionsVisibility();
+    });
+
+    function updateBulkActionsVisibility() {
+        const checkedCount = $('.user-checkbox:checked').length;
+        if (checkedCount > 0) {
+            $('#bulkActions').removeClass('d-none');
+        } else {
+            $('#bulkActions').addClass('d-none');
+        }
+    }
+
+    // Individual Toggle
+    $(document).on('click', '.toggle-status', function() {
+        const id = $(this).data('id');
+        const currentStatus = $(this).data('status');
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.post('../api/admin_user_action.php', {
+            action: 'set_status',
+            ids: [id],
+            status: newStatus,
+            csrf_token: csrf_token
+        }, function(res) {
+            if (res.success) {
+                table.ajax.reload(null, false);
+            } else {
+                alert(res.message);
+                table.ajax.reload(null, false);
+            }
+        }, 'json');
+    });
+
+    // Bulk Action
+    $('#applyBulkAction').on('click', function() {
+        const actionType = $('#bulkActionSelect').val();
+        if (!actionType) return;
+
+        const selectedIds = $('.user-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) return;
+
+        let postData = {
+            ids: selectedIds,
+            csrf_token: csrf_token
+        };
+
+        if (actionType === 'active' || actionType === 'inactive') {
+            postData.action = 'set_status';
+            postData.status = actionType;
+        } else if (actionType === 'delete') {
+            if (!confirm('Are you sure you want to delete these users? This cannot be undone.')) return;
+            postData.action = 'delete';
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.post('../api/admin_user_action.php', postData, function(res) {
+            btn.prop('disabled', false).text('Apply');
+            if (res.success) {
+                table.ajax.reload();
+                $('#selectAll').prop('checked', false);
+                $('#bulkActions').addClass('d-none');
+            } else {
+                alert(res.message);
+            }
+        }, 'json');
     });
 });
 </script>

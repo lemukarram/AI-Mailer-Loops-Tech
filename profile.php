@@ -7,6 +7,10 @@ $user_id = Auth::getUserId();
 $user_role = $_SESSION['user_role'];
 $db = Database::getInstance()->getConnection();
 
+$stmt = $db->prepare("SELECT purpose FROM user_settings WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$purpose = $stmt->fetchColumn() ?: 'job_hunt';
+
 $message = ''; $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -18,16 +22,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $company_name = $_POST['company_name'] ?? '';
         $designation = $_POST['designation'] ?? '';
         $other_info = $_POST['other_info'] ?? '';
+        $resume_text = $_POST['resume_text'] ?? '';
+        $business_profile_text = $_POST['business_profile_text'] ?? '';
 
         try {
-            $stmt = $db->prepare("INSERT INTO user_profiles (user_id, full_name, phone, linkedin_url, website_url, company_name, designation, other_info) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            $stmt = $db->prepare("INSERT INTO user_profiles (user_id, full_name, phone, linkedin_url, website_url, company_name, designation, other_info, resume_text, business_profile_text) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                  ON DUPLICATE KEY UPDATE 
                                  full_name=VALUES(full_name), phone=VALUES(phone), 
                                  linkedin_url=VALUES(linkedin_url), website_url=VALUES(website_url), 
                                  company_name=VALUES(company_name), designation=VALUES(designation), 
-                                 other_info=VALUES(other_info)");
-            $stmt->execute([$user_id, $full_name, $phone, $linkedin_url, $website_url, $company_name, $designation, $other_info]);
+                                 other_info=VALUES(other_info), resume_text=VALUES(resume_text), 
+                                 business_profile_text=VALUES(business_profile_text)");
+            $stmt->execute([$user_id, $full_name, $phone, $linkedin_url, $website_url, $company_name, $designation, $other_info, $resume_text, $business_profile_text]);
             $message = "Profile updated successfully.";
         } catch (PDOException $e) {
             $error = "Update failed: " . $e->getMessage();
@@ -101,7 +108,7 @@ $csrf_token = Auth::generateCSRFToken();
             <h6 class="mb-0 fw-bold">AI Mailer</h6>
         </div>
         <div class="glass-card">
-            <h3 class="fw-bold mb-2">Personal Identity</h3>
+            <h3 class="fw-bold mb-2"><?php echo $purpose === 'job_hunt' ? 'Professional Persona' : 'Business Identity'; ?></h3>
             <p class="text-muted mb-5">These details will be passed to the AI to help write highly personalized emails from you.</p>
 
             <?php if($message): ?><div class="alert alert-success border-0 rounded-4 shadow-sm p-3 mb-4"><?php echo $message; ?></div><?php endif; ?>
@@ -112,11 +119,11 @@ $csrf_token = Auth::generateCSRFToken();
                 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <label class="form-label">Your Full Name</label>
+                        <label class="form-label">Name / Business Owner</label>
                         <input type="text" name="full_name" class="form-control" value="<?php echo htmlspecialchars($profile['full_name'] ?? ''); ?>" placeholder="John Doe">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Designation / Profession</label>
+                        <label class="form-label"><?php echo $purpose === 'job_hunt' ? 'Designation / Profession' : 'Business Role / Primary Service'; ?></label>
                         <input type="text" name="designation" class="form-control" value="<?php echo htmlspecialchars($profile['designation'] ?? ''); ?>" placeholder="Senior Software Architect">
                     </div>
                     <div class="col-md-6">
@@ -139,6 +146,21 @@ $csrf_token = Auth::generateCSRFToken();
                         <label class="form-label">Other Information (Skills, Context, Bio)</label>
                         <textarea name="other_info" class="form-control" rows="4" placeholder="Briefly describe your expertise or what you are looking for..."><?php echo htmlspecialchars($profile['other_info'] ?? ''); ?></textarea>
                     </div>
+
+                    <?php if ($purpose === 'job_hunt'): ?>
+                        <div class="col-12">
+                            <label class="form-label text-primary"><i class="fas fa-file-lines me-2"></i>Extracted Resume Context</label>
+                            <textarea name="resume_text" class="form-control bg-light" rows="6"><?php echo htmlspecialchars($profile['resume_text'] ?? ''); ?></textarea>
+                            <div class="form-text small">This is the text extracted from your resume and passed to the AI agent.</div>
+                        </div>
+                    <?php else: ?>
+                        <div class="col-12">
+                            <label class="form-label text-primary"><i class="fas fa-building-user me-2"></i>Extracted Business Profile Context</label>
+                            <textarea name="business_profile_text" class="form-control bg-light" rows="6"><?php echo htmlspecialchars($profile['business_profile_text'] ?? ''); ?></textarea>
+                            <div class="form-text small">This is the text extracted from your business profile and passed to the AI agent.</div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="col-12 mt-4">
                         <button type="submit" class="btn btn-primary shadow-sm">
                             <i class="fas fa-save me-2"></i> Save Profile Details

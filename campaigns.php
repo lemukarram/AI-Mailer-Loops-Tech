@@ -47,6 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $db->prepare("SELECT * FROM campaigns WHERE user_id = ? ORDER BY id DESC LIMIT 1");
 $stmt->execute([$user_id]);
 $campaign = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$stmt = $db->prepare("SELECT master_ai_used FROM user_settings WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$user_settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['master_ai_used' => 0];
+
 $csrf_token = Auth::generateCSRFToken();
 ?>
 <!DOCTYPE html>
@@ -119,10 +124,17 @@ $csrf_token = Auth::generateCSRFToken();
         <div class="glass-card">
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
-                    <h3 class="fw-bold m-0 text-dark">Campaign Engine</h3>
-                    <p class="text-muted small mb-0">Define how AI and Manual templates should behave.</p>
+                    <h3 class="fw-bold m-0 text-dark">Campaign Engine <span class="badge bg-primary-subtle text-primary fw-600 fs-6 ms-2" style="font-size: 0.75rem !important;"><?php echo $purpose_label; ?></span></h3>
+                    <p class="text-muted small mb-0">Define how AI and Manual templates should behave for your outreach.</p>
                 </div>
-                <i class="fas fa-wand-sparkles fs-2 text-primary opacity-25"></i>
+                <div class="d-flex gap-2">
+                    <?php if (!($user_settings['master_ai_used'] ?? 0)): ?>
+                        <button type="button" id="fillInfoBtn" class="btn btn-light border rounded-4 px-4 fw-bold text-primary shadow-sm">
+                            <i class="fas fa-magic me-2"></i> AI Setup Wizard
+                        </button>
+                    <?php endif; ?>
+                    <i class="fas fa-wand-sparkles fs-2 text-primary opacity-25 ms-3"></i>
+                </div>
             </div>
 
             <?php if($message): ?>
@@ -203,7 +215,29 @@ $(document).ready(function() {
     $('#toggleSidebar, .sidebar-close').on('click', function() {
         $('#sidebar').toggleClass('mobile-show');
     });
+
+    $('#fillInfoBtn').on('click', function() {
+        if (!confirm('This will use your one-time Master AI generation to populate your campaign fields based on your profile. Continue?')) return;
+
+        var btn = $(this);
+        var originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Generating...');
+
+        $.post('api/fill_campaign_details.php', { csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
+            if (res.success) {
+                $('textarea[name="base_prompt"]').val(res.base_prompt);
+                $('input[name="subject_template"]').val(res.subject);
+                $('textarea[name="body_template"]').val(res.body);
+                btn.fadeOut();
+                alert('Campaign fields populated successfully! Don\'t forget to click "Sync Engine Settings" to save.');
+            } else {
+                alert(res.error);
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        }, 'json');
+    });
 });
 </script>
 </body>
 </html>
+ml>

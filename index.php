@@ -25,6 +25,18 @@ $stmt = $db->prepare("SELECT queue_status FROM user_settings WHERE user_id = ?")
 $stmt->execute([$user_id]);
 $queue_status = $stmt->fetchColumn() ?: 'stopped';
 
+// Check wizard status
+$stmt = $db->prepare("SELECT wizard_completed, purpose FROM user_settings WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$user_settings = $stmt->fetch(PDO::FETCH_ASSOC);
+$wizard_completed = $user_settings['wizard_completed'] ?? 0;
+$purpose = $user_settings['purpose'] ?? 'job_hunt';
+
+if ($wizard_completed === 0) {
+    header("Location: wizard.php");
+    exit();
+}
+
 $csrf_token = Auth::generateCSRFToken();
 ?>
 <!DOCTYPE html>
@@ -312,9 +324,9 @@ $csrf_token = Auth::generateCSRFToken();
             <div class="row g-4 mb-5">
                 <div class="col-sm-6 col-xl-4">
                     <div class="card-stat">
-                        <div class="stat-icon icon-total"><i class="fas fa-users"></i></div>
+                        <div class="stat-icon icon-total"><i class="fas fa-<?php echo $purpose === 'job_hunt' ? 'briefcase' : 'building'; ?>"></i></div>
                         <div>
-                            <div class="text-secondary small fw-600">Total Contacts</div>
+                            <div class="text-secondary small fw-600"><?php echo $purpose === 'job_hunt' ? 'Job Contacts' : 'Business Contacts'; ?></div>
                             <div class="fs-3 fw-bold"><?php echo number_format($total_list); ?></div>
                         </div>
                     </div>
@@ -323,7 +335,7 @@ $csrf_token = Auth::generateCSRFToken();
                     <div class="card-stat">
                         <div class="stat-icon icon-sent"><i class="fas fa-paper-plane"></i></div>
                         <div>
-                            <div class="text-secondary small fw-600">Emails Sent</div>
+                            <div class="text-secondary small fw-600"><?php echo $purpose === 'job_hunt' ? 'Applied for Jobs' : 'Business Inquiries'; ?></div>
                             <div class="fs-3 fw-bold"><?php echo number_format($sent_count); ?></div>
                         </div>
                     </div>
@@ -342,7 +354,7 @@ $csrf_token = Auth::generateCSRFToken();
             <!-- Main Data Table -->
             <div class="data-card">
                 <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-                    <h5 class="fw-bold m-0 text-dark">Active Mailing List</h5>
+                    <h5 class="fw-bold m-0 text-dark"><?php echo $purpose === 'job_hunt' ? 'Target Companies' : 'Lead Prospect List'; ?></h5>
                     <div class="text-muted small">Updated just now</div>
                 </div>
                 <table id="mailingTable" class="table w-100">

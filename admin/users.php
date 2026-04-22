@@ -10,8 +10,8 @@ $message = ''; $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_limits'])) {
     if (Auth::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $stmt = $db->prepare("UPDATE admin_limits SET max_emails_per_hour = ?, total_max_emails = ?, max_file_upload_size = ?, max_excel_rows = ? WHERE id = 1");
-        $stmt->execute([$_POST['max_emails_per_hour'], $_POST['total_max_emails'], $_POST['max_file_upload_size'], $_POST['max_excel_rows']]);
+        $stmt = $db->prepare("UPDATE admin_limits SET max_emails_per_hour = ?, total_max_emails = ?, max_file_upload_size = ?, max_excel_rows = ?, master_gemini_key = ? WHERE id = 1");
+        $stmt->execute([$_POST['max_emails_per_hour'], $_POST['total_max_emails'], $_POST['max_file_upload_size'], $_POST['max_excel_rows'], $_POST['master_gemini_key']]);
         $message = "Global platform limits updated.";
     }
 }
@@ -107,6 +107,11 @@ $csrf_token = Auth::generateCSRFToken();
                         <div class="mb-3">
                             <label class="form-label small">Max Rows / Upload</label>
                             <input type="number" name="max_excel_rows" class="form-control" value="<?php echo $limits['max_excel_rows']; ?>">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-primary">Master Gemini Key</label>
+                            <input type="password" name="master_gemini_key" class="form-control border-primary border-opacity-25" value="<?php echo htmlspecialchars($limits['master_gemini_key'] ?? ''); ?>" placeholder="Enter Gemini Pro Key">
+                            <div class="form-text small">Used for AI-assisted profile setup and prompt generation.</div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-3 mt-2">Update Parameters</button>
                     </form>

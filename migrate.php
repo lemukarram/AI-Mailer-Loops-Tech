@@ -3,7 +3,7 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/src/Database.php';
 
 // Check for admin key
-$key = $_GET['key'] ?? '';
+$key = $_GET['key'] ?? $_SERVER['ADMIN_KEY'] ?? '';
 if ($key !== ADMIN_KEY) {
     die("Unauthorized access.");
 }
@@ -87,7 +87,16 @@ $queries = [
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )",
-    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_enabled TINYINT(1) DEFAULT 1 AFTER preferred_llm"
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_enabled TINYINT(1) DEFAULT 1 AFTER preferred_llm",
+    "ALTER TABLE admin_limits ADD COLUMN IF NOT EXISTS master_gemini_key VARCHAR(255) AFTER max_excel_rows",
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS purpose ENUM('job_hunt', 'business_leads') DEFAULT 'job_hunt' AFTER user_id",
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS wizard_completed TINYINT(1) DEFAULT 0 AFTER purpose",
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS master_ai_used TINYINT(1) DEFAULT 0 AFTER wizard_completed",
+    "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS gmail_oauth_token TEXT AFTER master_ai_used",
+    "ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS resume_text TEXT AFTER other_info",
+    "ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS business_profile_text TEXT AFTER resume_text",
+    "ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS resume_path VARCHAR(255) AFTER business_profile_text",
+    "ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS business_profile_path VARCHAR(255) AFTER resume_path"
 ];
 
 foreach ($queries as $sql) {

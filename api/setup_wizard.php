@@ -62,21 +62,24 @@ try {
     $personal_limit = !empty($_POST['personal_hourly_limit']) ? (int)$_POST['personal_hourly_limit'] : 10;
     if ($personal_limit > 12) $personal_limit = 12;
 
-    $stmt = $db->prepare("UPDATE user_settings SET 
-                         purpose = ?, ai_enabled = ?, preferred_llm = ?, 
-                         openai_api_key = ?, gemini_api_key = ?, 
-                         smtp_host = ?, smtp_port = ?, smtp_user = ?, smtp_pass = ?,
-                         personal_hourly_limit = ?, wizard_completed = 1 
-                         WHERE user_id = ?");
+    $stmt = $db->prepare("INSERT INTO user_settings 
+                         (user_id, purpose, ai_enabled, preferred_llm, openai_api_key, gemini_api_key, smtp_host, smtp_port, smtp_user, smtp_pass, personal_hourly_limit, wizard_completed) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                         ON DUPLICATE KEY UPDATE 
+                         purpose = VALUES(purpose), ai_enabled = VALUES(ai_enabled), preferred_llm = VALUES(preferred_llm), 
+                         openai_api_key = VALUES(openai_api_key), gemini_api_key = VALUES(gemini_api_key), 
+                         smtp_host = VALUES(smtp_host), smtp_port = VALUES(smtp_port), 
+                         smtp_user = VALUES(smtp_user), smtp_pass = VALUES(smtp_pass),
+                         personal_hourly_limit = VALUES(personal_hourly_limit), wizard_completed = 1");
     
     $oa_key = ($preferred_llm === 'openai') ? $api_key : null;
     $gm_key = ($preferred_llm === 'gemini') ? $api_key : null;
 
     $stmt->execute([
-        $purpose, $ai_enabled, $preferred_llm, 
+        $user_id, $purpose, $ai_enabled, $preferred_llm, 
         $oa_key, $gm_key,
         $smtp_host, $smtp_port, $smtp_user, $smtp_pass,
-        $personal_limit, $user_id
+        $personal_limit
     ]);
 
     // 5. Pre-generate Campaign Placeholder using Master AI (if possible)

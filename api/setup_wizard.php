@@ -103,9 +103,6 @@ try {
                 $base_prompt = $ai_data['base_prompt'] ?? '';
                 $subject = $ai_data['subject'] ?? '';
                 $body = $ai_data['body'] ?? '';
-
-                // Mark master AI as used
-                $db->prepare("UPDATE user_settings SET master_ai_used = 1 WHERE user_id = ?")->execute([$user_id]);
             }
         } catch (Exception $e) {
             // Log error internally if needed, but don't stop the flow
@@ -114,14 +111,16 @@ try {
 
     // Fallback generic if AI failed or no master key
     if (empty($subject)) {
+
+        // GENERIC FALLBACKS
         if ($purpose === 'job_hunt') {
-            $base_prompt = "Write a warm, professional, and 100% humanized outreach email to a hiring manager.";
+            $base_prompt = "Write a warm, professional, and 100% humanized outreach email to a hiring manager. Emphasize my enthusiasm for the role at [company] and keep it concise.100% interesting and humanize tone";
             $subject = "Regarding the open position at [company]";
-            $body = "Hi there,\n\nI recently came across the opening at [company] and was immediately drawn to the team's mission.\n\nAre you open to a brief chat next week?\n\nBest regards,\n" . $full_name;
+            $body = "Hi there,\n\nI recently came across the opening at [company] and was immediately drawn to the team's mission. I've been following your progress in the industry and would love to bring my skills to your current projects.\n\nAre you open to a brief chat next week to see if my background might be a good fit?\n\nBest regards,\n[My Name]";
         } else {
-            $base_prompt = "Write a soft-toned, catchy B2B outreach email for my services.";
+            $base_prompt = "Write a soft-toned, catchy B2B outreach email for my services. Focus on how I can provide value to [company] without being pushy or salesy.100% interesting and humanize tone";
             $subject = "Quick question for the [company] team";
-            $body = "Hello,\n\nI've been admiring the work [company] is doing and noticed some interesting opportunities where my services could help you scale even faster.\n\nCheers,\n" . $full_name;
+            $body = "Hello,\n\nI've been admiring the work [company] is doing and noticed some interesting opportunities where my services could help you scale even faster.\n\nI'm not looking to sell you anything right now—just wanted to introduce myself and see if we might have some common ground for a quick conversation.\n\nCheers,\n[My Name]";
         }
     }
 

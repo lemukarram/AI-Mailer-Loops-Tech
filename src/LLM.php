@@ -22,7 +22,7 @@ class LLM {
     public function generateCampaignPlaceholder($purpose, $profile) {
         $purposeText = ($purpose === 'job_hunt') ? "Job Hunting (Personal Career)" : "Business Lead Generation (B2B/Services)";
         
-        $systemContext = "You are a professional outreach architect. Write with a 100% humanized, soft, and authentic tone. Never use emojis. Avoid AI-sounding transitions like 'I hope this finds you well'. Ensure the tone is indistinguishable from a high-level professional human writer. Return a strict JSON object containing 'base_prompt', 'subject', and 'body'.";
+        $systemContext = "You are a professional outreach architect. Write with a 100% humanized, soft, and authentic tone. Never use emojis. Avoid AI-sounding transitions like 'I hope this finds you well'. Ensure the tone is indistinguishable from a high-level professional human writer.from any point email should not look like written by AI.Email should be interesting and catchy so that the receiver must read it. write subject that include [company] placeholder to grab the receiver attention. in body user [company] place holder atleat once . Return a strict JSON object containing 'base_prompt', 'subject', and 'body'.";
         
         $userPrompt = "CONTEXT:\n";
         $userPrompt .= "User Purpose: $purposeText\n";

@@ -90,9 +90,9 @@ $csrf_token = Auth::generateCSRFToken();
 <div class="d-flex">
     <nav id="sidebar">
         <div class="sidebar-close"><i class="fas fa-times"></i></div>
-        <a href="index.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
+        <a href="dashboard.php" class="sidebar-brand"><i class="fas fa-inbox"></i><span>AI Mailer</span></a>
         <div class="nav-menu mt-2">
-            <a href="index.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
+            <a href="dashboard.php" class="nav-link"><i class="fas fa-house"></i> Dashboard</a>
             <a href="campaigns.php" class="nav-link"><i class="fas fa-bullhorn"></i> Campaigns</a>
             <a href="profile.php" class="nav-link active"><i class="fas fa-id-card"></i> Profile</a>
             <a href="logs.php" class="nav-link"><i class="fas fa-list-ul"></i> Logs</a>

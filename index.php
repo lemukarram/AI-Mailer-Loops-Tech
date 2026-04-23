@@ -1,571 +1,274 @@
 <?php
-require_once __DIR__ . '/src/Auth.php';
-require_once __DIR__ . '/src/Database.php';
-
-Auth::requireLogin();
-$user_id = Auth::getUserId();
-$user_role = $_SESSION['user_role'];
-$db = Database::getInstance()->getConnection();
-
-// Fetch counters
-$stmt = $db->prepare("SELECT COUNT(*) FROM mailing_list WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$total_list = $stmt->fetchColumn();
-
-$stmt = $db->prepare("SELECT COUNT(*) FROM mailing_list WHERE user_id = ? AND status = 'sent'");
-$stmt->execute([$user_id]);
-$sent_count = $stmt->fetchColumn();
-
-$stmt = $db->prepare("SELECT COUNT(*) FROM mailing_list WHERE user_id = ? AND status = 'unsent'");
-$stmt->execute([$user_id]);
-$unsent_count = $stmt->fetchColumn();
-
-// Fetch queue status
-$stmt = $db->prepare("SELECT queue_status FROM user_settings WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$queue_status = $stmt->fetchColumn() ?: 'stopped';
-
-// Check wizard status
-$stmt = $db->prepare("SELECT wizard_completed, purpose FROM user_settings WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$user_settings = $stmt->fetch(PDO::FETCH_ASSOC);
-$wizard_completed = $user_settings['wizard_completed'] ?? 0;
-$purpose = $user_settings['purpose'] ?? 'job_hunt';
-
-if ($wizard_completed === 0) {
-    header("Location: wizard.php");
-    exit();
-}
-
-$csrf_token = Auth::generateCSRFToken();
+session_start();
+// If logged in, maybe show a "Go to Dashboard" button instead of "Login"
+$is_logged_in = isset($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - AI Mailer</title>
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="AI Mailer is the ultimate AI email outreach software. Automate B2B lead generation and job search emails with 100% humanized, perfectly tailored messages using Gemini and OpenAI.">
+    <meta name="keywords" content="AI Email Outreach, Cold Email Software, B2B Lead Generation, Humanized AI Emails, Job Search Email Automator, SaaS Email Marketing, Automated Cold Email">
+    <title>AI Mailer | Humanized AI Email Outreach Software for B2B & Job Hunters</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #64748b;
-            --dark: #0f172a;
-            --light: #f8fafc;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --sidebar-width: 280px;
-        }
+        :root { --primary: #6366f1; --primary-dark: #4f46e5; --dark: #0f172a; --light: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--light); color: var(--dark); overflow-x: hidden; }
         
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f1f5f9;
-            color: #334155;
-            overflow-x: hidden;
-        }
-
-        /* Sidebar */
-        #sidebar {
-            width: var(--sidebar-width);
-            background: var(--dark);
-            color: #fff;
-            min-height: 100vh;
-            position: fixed;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1040;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
-        }
+        /* Navbar */
+        .navbar { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); transition: all 0.3s; padding: 15px 0; }
+        .navbar-brand { font-weight: 800; color: var(--dark); font-size: 1.5rem; }
+        .navbar-brand i { color: var(--primary); margin-right: 8px; }
+        .nav-link { font-weight: 600; color: #475569; margin: 0 10px; transition: 0.3s; }
+        .nav-link:hover { color: var(--primary); }
+        .btn-nav { font-weight: 700; border-radius: 12px; padding: 10px 24px; transition: 0.3s; }
+        .btn-nav-outline { border: 2px solid var(--primary); color: var(--primary); }
+        .btn-nav-outline:hover { background: var(--primary); color: #fff; }
         
-        #sidebar.collapsed { margin-left: calc(-1 * var(--sidebar-width)); }
+        /* Hero Section */
+        .hero { padding: 120px 0 80px; position: relative; background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 50%); }
+        .hero h1 { font-size: 4rem; font-weight: 800; line-height: 1.1; margin-bottom: 24px; letter-spacing: -0.03em; }
+        .hero h1 span { background: linear-gradient(135deg, var(--primary), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.25rem; color: #475569; margin-bottom: 40px; max-width: 600px; }
+        .btn-hero { background: var(--primary); color: #fff; border-radius: 16px; padding: 16px 40px; font-size: 1.1rem; font-weight: 700; border: none; box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.4); transition: 0.3s; }
+        .btn-hero:hover { background: var(--primary-dark); transform: translateY(-3px); box-shadow: 0 25px 35px -10px rgba(99, 102, 241, 0.5); color: #fff; }
         
-        .sidebar-brand { 
-            padding: 2.5rem 1.5rem; 
-            display: flex; 
-            align-items: center; 
-            font-size: 1.5rem; 
-            font-weight: 700; 
-            color: #fff;
-            text-decoration: none;
-        }
-        .sidebar-brand i { 
-            background: var(--primary); 
-            width: 40px; 
-            height: 40px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border-radius: 10px; 
-            margin-right: 12px;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .sidebar-close {
-            display: none;
-            position: absolute;
-            right: 1rem;
-            top: 2.5rem;
-            font-size: 1.25rem;
-            color: #94a3b8;
-            cursor: pointer;
-            padding: 0.5rem;
-            transition: 0.2s;
-        }
-        .sidebar-close:hover { color: #fff; }
+        .hero-img-wrapper { position: relative; perspective: 1000px; }
+        .hero-img { border-radius: 24px; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.15); transform: rotateY(-15deg) rotateX(5deg); transition: transform 0.5s; width: 100%; border: 1px solid rgba(255,255,255,0.5); }
+        .hero-img-wrapper:hover .hero-img { transform: rotateY(0) rotateX(0); }
         
-        .nav-menu { padding: 0 1rem; }
-        .nav-item { margin-bottom: 0.5rem; }
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 0.85rem 1.25rem;
-            color: #94a3b8;
-            text-decoration: none;
-            border-radius: 12px;
-            transition: 0.2s all;
-            font-weight: 500;
-        }
-        .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
-        .nav-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.08);
-        }
-        .nav-link.active {
-            background: var(--primary) !important;
-            color: #fff !important;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-        .nav-link.text-danger:hover { background: rgba(239, 68, 68, 0.1); }
-
-        /* Content Area */
-        #content {
-            margin-left: var(--sidebar-width);
-            transition: all 0.3s;
-            min-height: 100vh;
-        }
-        #content.expanded { margin-left: 0; }
-
-        .top-bar {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        /* Stat Cards */
-        .card-stat {
-            border: none;
-            border-radius: 20px;
-            padding: 1.5rem;
-            background: #fff;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 1.25rem;
-        }
-        .card-stat:hover { transform: translateY(-5px); }
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        .icon-total { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
-        .icon-sent { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .icon-queue { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-
-        /* Table Style */
-        .data-card {
-            background: #fff;
-            border-radius: 24px;
-            border: none;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04);
-            padding: 1.5rem;
-        }
-        .table thead th {
-            background: #f8fafc;
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.025em;
-            border: none;
-            padding: 1.25rem 1rem;
-        }
-        .table tbody td { padding: 1.25rem 1rem; border-color: #f1f5f9; }
-
-        /* Buttons */
-        .btn-action {
-            border-radius: 12px;
-            padding: 0.6rem 1.5rem;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .btn-primary { background: var(--primary); border: none; }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-
-        /* Responsive */
-        @media (max-width: 992px) {
-            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
-            #sidebar.mobile-show { margin-left: 0; }
-            #content { margin-left: 0 !important; }
-            .sidebar-close { display: block; }
-            .top-bar { padding: 1rem; }
-            .p-4.p-lg-5 { padding: 1.5rem !important; }
-            .card-stat { padding: 1.25rem; }
-            .data-card { padding: 1rem; border-radius: 16px; overflow-x: auto; }
-        }
+        /* Features */
+        .features { padding: 100px 0; background: #fff; }
+        .section-title { text-align: center; margin-bottom: 60px; }
+        .section-title h2 { font-weight: 800; font-size: 2.5rem; }
+        .section-title p { color: #64748b; font-size: 1.1rem; }
         
-        @media (max-width: 576px) {
-            .top-bar { flex-wrap: wrap; gap: 0.75rem !important; }
-            .top-bar .d-flex.gap-3 { width: 100%; justify-content: space-between; gap: 0.5rem !important; }
-            .btn-action { padding: 0.5rem 1rem; font-size: 0.85rem; flex: 1; }
-            .stat-icon { width: 44px; height: 44px; font-size: 1.2rem; }
-            .fs-3 { font-size: 1.5rem !important; }
+        .feature-card { background: var(--light); border-radius: 24px; padding: 40px; text-align: left; transition: 0.3s; border: 1px solid transparent; height: 100%; }
+        .feature-card:hover { transform: translateY(-10px); background: #fff; border-color: rgba(99, 102, 241, 0.2); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05); }
+        .feature-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(99, 102, 241, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 24px; }
+        .feature-card h4 { font-weight: 700; margin-bottom: 16px; }
+        .feature-card p { color: #64748b; margin-bottom: 0; line-height: 1.7; }
+        
+        /* How it works */
+        .how-it-works { padding: 100px 0; background: var(--dark); color: #fff; }
+        .step-box { text-align: center; position: relative; z-index: 1; margin-bottom: 40px; }
+        .step-number { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 24px; color: var(--primary); border: 2px solid rgba(99, 102, 241, 0.3); backdrop-filter: blur(5px); }
+        .step-box h4 { font-weight: 700; margin-bottom: 16px; }
+        .step-box p { color: #94a3b8; }
+        
+        /* Footer */
+        .footer { padding: 60px 0 30px; background: #fff; border-top: 1px solid #e2e8f0; }
+        .footer-logo { font-weight: 800; font-size: 1.5rem; color: var(--dark); text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        .footer-link { color: #64748b; text-decoration: none; display: block; margin-bottom: 10px; transition: 0.3s; }
+        .footer-link:hover { color: var(--primary); padding-left: 5px; }
+        
+        /* Floating animations */
+        .float-1 { animation: float 6s ease-in-out infinite; }
+        .float-2 { animation: float 8s ease-in-out infinite reverse; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+        @media (max-width: 991px) {
+            .hero h1 { font-size: 3rem; }
+            .hero-img { transform: none; margin-top: 40px; }
         }
     </style>
 </head>
 <body>
 
-<div class="d-flex">
-    <!-- Sidebar -->
-    <nav id="sidebar">
-        <div class="sidebar-close"><i class="fas fa-times"></i></div>
-        <a href="index.php" class="sidebar-brand">
-            <i class="fas fa-inbox"></i>
-            <span>AI Mailer</span>
-        </a>
-
-        <div class="nav-menu">
-            <div class="nav-item">
-                <a href="index.php" class="nav-link active">
-                    <i class="fas fa-house"></i> Dashboard
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="campaigns.php" class="nav-link">
-                    <i class="fas fa-bullhorn"></i> Campaigns
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="profile.php" class="nav-link">
-                    <i class="fas fa-id-card"></i> Profile
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="logs.php" class="nav-link">
-                    <i class="fas fa-list-ul"></i> Logs
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="settings.php" class="nav-link">
-                    <i class="fas fa-gear"></i> Settings
-                </a>
-            </div>
-            <?php if ($user_role === 'admin'): ?>
-                <div class="nav-item">
-                    <a href="admin/users.php" class="nav-link">
-                        <i class="fas fa-user-shield"></i> Admin Panel
-                    </a>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="index.php"><i class="fas fa-inbox"></i> AI Mailer</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars fs-3"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="knowledge-base.php">Knowledge Base</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php">Contact</a></li>
+                </ul>
+                <div class="d-flex gap-3 mt-3 mt-lg-0">
+                    <?php if ($is_logged_in): ?>
+                        <a href="dashboard.php" class="btn btn-nav btn-hero py-2 px-4">Dashboard</a>
+                    <?php else: ?>
+                        <a href="login.php" class="btn btn-nav btn-nav-outline">Log In</a>
+                        <a href="register.php" class="btn btn-nav btn-hero py-2 px-4">Start Free</a>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
-            <div class="nav-item mt-5">
-                <a href="logout.php" class="nav-link text-danger">
-                    <i class="fas fa-right-from-bracket"></i> Logout
-                </a>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div id="content" class="flex-grow-1">
-        <div class="top-bar d-flex justify-content-between align-items-center">
-            <button id="toggleSidebar" class="btn btn-light d-lg-none">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h5 class="mb-0 fw-bold text-dark d-none d-md-block">Overview</h5>
-            
-            <div class="d-flex gap-3">
-                <button id="toggleQueueBtn" class="btn btn-action <?php echo $queue_status === 'started' ? 'btn-danger' : 'btn-success'; ?>">
-                    <i class="fas <?php echo $queue_status === 'started' ? 'fa-pause' : 'fa-play'; ?> me-2"></i>
-                    <?php echo $queue_status === 'started' ? 'Stop Queue' : 'Start Queue'; ?>
-                </button>
-                <button class="btn btn-primary btn-action" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                    <i class="fas fa-upload me-2"></i> Import List
-                </button>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 animate__animated animate__fadeInLeft">
+                    <div class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill mb-4 border border-primary-subtle">🚀 The #1 AI Cold Email Software</div>
+                    <h1>Outreach that feels <span>100% Human.</span></h1>
+                    <p>Stop sounding like a robot. AI Mailer uses advanced generative AI to craft perfectly tailored, hyper-personalized emails for B2B lead generation and job hunting at scale.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="register.php" class="btn btn-hero">Start Sending Now <i class="fas fa-arrow-right ms-2"></i></a>
+                        <a href="knowledge-base.php" class="btn btn-nav btn-nav-outline py-3 px-4 d-flex align-items-center bg-white"><i class="fas fa-book-open me-2"></i> Read the Guide</a>
+                    </div>
+                    <div class="mt-5 d-flex align-items-center gap-3 text-muted small fw-bold">
+                        <span><i class="fas fa-check-circle text-success me-1"></i> No Credit Card</span>
+                        <span><i class="fas fa-check-circle text-success me-1"></i> B2B & Job Seekers</span>
+                        <span><i class="fas fa-check-circle text-success me-1"></i> Gemini & OpenAI</span>
+                    </div>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0">
+                    <div class="hero-img-wrapper animate__animated animate__fadeInRight float-1">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop" alt="AI Email Dashboard" class="hero-img">
+                        <!-- Decorative floating elements -->
+                        <div class="position-absolute top-0 start-0 translate-middle bg-white p-3 rounded-4 shadow-lg float-2" style="z-index: 2;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success-subtle text-success p-2 rounded-circle"><i class="fas fa-paper-plane"></i></div>
+                                <div><div class="small text-muted fw-bold">Open Rate</div><div class="fw-bold fs-5">84.2%</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="p-4 p-lg-5">
-            <?php if (isset($_GET['msg'])): ?>
-                <div class="alert alert-success border-0 shadow-sm rounded-4 px-4 py-3 mb-4 d-flex align-items-center">
-                    <i class="fas fa-circle-check fs-4 me-3"></i>
-                    <div><?php echo htmlspecialchars($_GET['msg']); ?></div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
-
-            <!-- Stats Grid -->
-            <div class="row g-4 mb-5">
-                <div class="col-sm-6 col-xl-4">
-                    <div class="card-stat">
-                        <div class="stat-icon icon-total"><i class="fas fa-<?php echo $purpose === 'job_hunt' ? 'briefcase' : 'building'; ?>"></i></div>
-                        <div>
-                            <div class="text-secondary small fw-600"><?php echo $purpose === 'job_hunt' ? 'Job Contacts' : 'Business Contacts'; ?></div>
-                            <div class="fs-3 fw-bold"><?php echo number_format($total_list); ?></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-4">
-                    <div class="card-stat">
-                        <div class="stat-icon icon-sent"><i class="fas fa-paper-plane"></i></div>
-                        <div>
-                            <div class="text-secondary small fw-600"><?php echo $purpose === 'job_hunt' ? 'Applied for Jobs' : 'Business Inquiries'; ?></div>
-                            <div class="fs-3 fw-bold"><?php echo number_format($sent_count); ?></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-4">
-                    <div class="card-stat">
-                        <div class="stat-icon icon-queue"><i class="fas fa-clock"></i></div>
-                        <div>
-                            <div class="text-secondary small fw-600">In Queue</div>
-                            <div class="fs-3 fw-bold"><?php echo number_format($unsent_count); ?></div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Features -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-title animate__animated animate__fadeInUp">
+                <h2 class="text-dark">Powerful Automation, Zero Bloat</h2>
+                <p>Engineered for maximum deliverability and response rates.</p>
             </div>
-
-            <!-- Main Data Table -->
-            <div class="data-card">
-                <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-                    <h5 class="fw-bold m-0 text-dark"><?php echo $purpose === 'job_hunt' ? 'Target Companies' : 'Lead Prospect List'; ?></h5>
-                    <div class="text-muted small">Updated just now</div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                        <h4>Master AI Identity</h4>
+                        <p>Our Master AI agent analyzes your resume or business profile to automatically craft your perfect outreach persona and custom prompts.</p>
+                    </div>
                 </div>
-                <table id="mailingTable" class="table w-100">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Company</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                </table>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-user-check"></i></div>
+                        <h4>100% Humanized Tone</h4>
+                        <p>Strict system prompts force the LLMs (GPT-4o or Gemini 2.5) to write softly, casually, and authentically, bypassing AI detectors.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        <h4>Safe Background Queue</h4>
+                        <p>Set a safe hourly limit (e.g., 10 emails/hr) to protect your domain reputation. Our cron engine handles the delivery in the background.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-file-excel"></i></div>
+                        <h4>Smart List Management</h4>
+                        <p>Upload your prospect lists via CSV. The system dynamically pulls `[contact_name]` and `[company]` into your templates.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-envelope-open-text"></i></div>
+                        <h4>Universal Mail Support</h4>
+                        <p>Connect any standard SMTP server or securely integrate with Google OAuth 2.0 for native Gmail sending capabilities.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                        <h4>Enterprise Security</h4>
+                        <p>AES-256-CBC encryption secures your API keys and SMTP credentials at rest. CSRF protection on all endpoints guarantees safety.</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-<!-- Modals -->
-<div class="modal fade" id="uploadModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form action="upload.php" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
-            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-            <div class="modal-header bg-light border-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold">Import Mailing List</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- How it Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-title animate__animated animate__fadeInUp">
+                <h2 class="text-white">How AI Mailer Works</h2>
+                <p class="text-muted">Launch your first highly-targeted campaign in under 5 minutes.</p>
             </div>
-            <div class="modal-body p-4">
-                <div class="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 mb-4">
-                    <p class="mb-0 small text-warning-emphasis fw-500">
-                        <i class="fas fa-triangle-exclamation me-2"></i> Warning: New upload will completely replace your current list.
-                    </p>
+            <div class="row position-relative">
+                <!-- Connecting Line -->
+                <div class="d-none d-lg-block position-absolute top-50 start-0 w-100 border-top border-2 border-secondary" style="z-index: 0; opacity: 0.2; transform: translateY(-50%);"></div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box">
+                        <div class="step-number">1</div>
+                        <h4>Setup Persona</h4>
+                        <p>Upload your resume or business profile in our sleek 5-step wizard. The Master AI configures your identity instantly.</p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label fw-bold text-dark">Select CSV File</label>
-                    <input type="file" name="excel_file" class="form-control form-control-lg rounded-4 fs-6" accept=".csv" required>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box">
+                        <div class="step-number">2</div>
+                        <h4>Import Leads</h4>
+                        <p>Upload your CSV file with your targets. Required columns are simply name and email. We handle the rest.</p>
+                    </div>
                 </div>
-                <div class="p-3 bg-light rounded-4">
-                    <div class="fw-bold small text-secondary mb-2">Expected CSV Header:</div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-white text-dark border px-3 py-2">contact name</span>
-                        <span class="badge bg-white text-dark border px-3 py-2">email</span>
-                        <span class="badge bg-white text-dark border px-3 py-2">company</span>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box">
+                        <div class="step-number">3</div>
+                        <h4>Review Prompts</h4>
+                        <p>Use the AI Setup Wizard to let Gemini or OpenAI draft your base prompt, subject, and signature based on your profile.</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box">
+                        <div class="step-number">4</div>
+                        <h4>Start Queue</h4>
+                        <p>Hit "Start Queue" on the dashboard. The system runs safely in the background respecting your hourly limits.</p>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-primary btn-action w-100 py-3 shadow">Import & Sync List</button>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
+    </section>
 
-<div class="modal fade" id="emailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
-            <div class="modal-header bg-dark text-white border-0 p-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-wand-magic-sparkles me-2 text-primary"></i> Content Review</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <a href="index.php" class="footer-logo"><i class="fas fa-inbox text-primary me-2"></i>AI Mailer</a>
+                    <p class="text-muted small pe-lg-5">The ultimate automated outreach tool that guarantees humanized, high-converting emails. Perfect for SaaS growth and job hunters.</p>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6 class="fw-bold mb-3">Product</h6>
+                    <a href="index.php#features" class="footer-link">Features</a>
+                    <a href="register.php" class="footer-link">Sign Up</a>
+                    <a href="login.php" class="footer-link">Login</a>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6 class="fw-bold mb-3">Resources</h6>
+                    <a href="knowledge-base.php" class="footer-link">Knowledge Base</a>
+                    <a href="about.php" class="footer-link">About Us</a>
+                    <a href="contact.php" class="footer-link">Contact</a>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6 class="fw-bold mb-3">Legal</h6>
+                    <a href="privacy-policy.php" class="footer-link">Privacy Policy</a>
+                    <a href="terms-conditions.php" class="footer-link">Terms & Conditions</a>
+                </div>
             </div>
-            <div class="modal-body p-4 bg-light bg-opacity-50">
-                <input type="hidden" id="current_contact_id">
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-secondary">To Recipient</label>
-                    <input type="text" id="email_to" class="form-control border-0 shadow-sm rounded-4 px-4 py-3" readonly>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-secondary">Subject Line</label>
-                    <input type="text" id="email_subject" class="form-control border-0 shadow-sm rounded-4 px-4 py-3">
-                </div>
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-secondary">Email Message Body</label>
-                    <textarea id="email_body" class="form-control border-0 shadow-sm rounded-4 px-4 py-3" rows="10"></textarea>
-                </div>
-                <div class="mb-0">
-                    <label class="form-label small fw-bold text-secondary">Signature / Footer</label>
-                    <input type="text" id="email_footer" class="form-control border-0 shadow-sm rounded-4 px-4 py-3">
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 bg-white">
-                <button type="button" class="btn btn-light btn-action px-4" data-bs-dismiss="modal">Discard</button>
-                <button id="sendNowBtn" class="btn btn-primary btn-action px-5 shadow">
-                    <i class="fas fa-paper-plane me-2"></i> Fire Email
-                </button>
+            <div class="border-top mt-5 pt-4 text-center text-muted small">
+                &copy; <?php echo date('Y'); ?> AI Mailer SaaS. All rights reserved.
             </div>
         </div>
-    </div>
-</div>
+    </footer>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    $('#toggleSidebar, .sidebar-close').on('click', function() {
-        $('#sidebar').toggleClass('mobile-show');
-    });
-
-    var table = $('#mailingTable').DataTable({
-        ajax: 'api/mailing_list.php',
-        responsive: true,
-        order: [[0, 'asc']],
-        dom: '<"d-flex justify-content-between align-items-center mb-3"f>rt<"d-flex justify-content-between align-items-center mt-3"ip>',
-        columns: [
-            { 
-                data: 'contact_name',
-                render: function(data) {
-                    return `<div class="fw-bold text-dark">${data}</div>`;
-                }
-            },
-            { data: 'email' },
-            { 
-                data: 'company',
-                render: function(data) {
-                    return data ? `<span class="badge bg-light text-dark border">${data}</span>` : '-';
-                }
-            },
-            { 
-                data: 'status',
-                render: function(data) {
-                    let color = data === 'sent' ? 'success' : (data === 'failed' ? 'danger' : 'secondary');
-                    return `<div class="d-flex align-items-center"><span class="bg-${color} rounded-circle me-2" style="width:8px; height:8px;"></span> <span class="text-${color} fw-600 small text-uppercase">${data}</span></div>`;
-                }
-            },
-            { 
-                data: null,
-                className: 'text-end',
-                render: function(data, type, row) {
-                    return `
-                        <div class="d-flex gap-2 justify-content-end">
-                            <button class="btn btn-light btn-sm rounded-3 px-3 generate-ai-btn" data-id="${row.id}" title="AI Generate">
-                                <i class="fas fa-wand-sparkles text-primary me-1"></i> AI
-                            </button>
-                            <button class="btn btn-light btn-sm rounded-3 px-3 review-manual-btn" data-id="${row.id}" title="Manual Edit">
-                                <i class="fas fa-pen-to-square text-secondary me-1"></i> Edit
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-        ],
-        language: {
-            search: "",
-            searchPlaceholder: "Search contacts...",
-            paginate: { next: '<i class="fas fa-chevron-right"></i>', previous: '<i class="fas fa-chevron-left"></i>' }
-        }
-    });
-
-    $(document).on('click', '.generate-ai-btn', function(e) {
-        e.preventDefault();
-        var id = $(this).data('id');
-        var item = $(this);
-        item.html('<i class="fas fa-circle-notch fa-spin me-2"></i> Generating...');
-
-        $.post('api/generate_ai.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            item.html('<i class="fas fa-wand-sparkles text-primary me-2"></i> AI Generate');
-            if(res.success) {
-                $('#current_contact_id').val(id);
-                $('#email_to').val(res.recipient);
-                $('#email_subject').val(res.data.subject);
-                $('#email_body').val(res.data.body);
-                $('#email_footer').val(res.data.footer);
-                $('#emailModal').modal('show');
-            } else { alert(res.error); }
-        }, 'json');
-    });
-
-    $(document).on('click', '.review-manual-btn', function(e) {
-        e.preventDefault();
-        var id = $(this).data('id');
-        $.post('api/prepare_template.php', { id: id, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            if(res.success) {
-                $('#current_contact_id').val(id);
-                $('#email_to').val(res.recipient);
-                $('#email_subject').val(res.subject);
-                $('#email_body').val(res.body);
-                $('#email_footer').val(res.footer);
-                $('#emailModal').modal('show');
-            } else { alert(res.error); }
-        }, 'json');
-    });
-
-    $('#sendNowBtn').on('click', function() {
-        var id = $('#current_contact_id').val();
-        var subject = $('#email_subject').val();
-        var body = $('#email_body').val();
-        var footer = $('#email_footer').val();
-        var btn = $(this);
-        btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin me-2"></i> Sending...');
-
-        $.post('api/send_single.php', { id: id, subject: subject, body: body, footer: footer, csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Fire Email');
-            if(res.success) {
-                $('#emailModal').modal('hide');
-                table.ajax.reload();
-            } else { alert(res.error); }
-        }, 'json');
-    });
-
-    $('#toggleQueueBtn').on('click', function() {
-        var btn = $(this);
-        $.post('api/toggle_queue.php', { csrf_token: '<?php echo $csrf_token; ?>' }, function(res) {
-            if(res.success) { location.reload(); } else { alert(res.error); }
-        }, 'json');
-    });
-});
-</script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

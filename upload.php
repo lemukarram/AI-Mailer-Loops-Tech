@@ -69,6 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Redirect back with status
-$redirect_url = "index.php?" . ($message ? "msg=" . urlencode($message) : "err=" . urlencode($error));
+$redirect_url = "dashboard.php?" . ($message ? "msg=" . urlencode($message) : "err=" . urlencode($error));
 header("Location: $redirect_url");
 exit();

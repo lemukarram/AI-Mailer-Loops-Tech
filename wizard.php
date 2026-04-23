@@ -11,7 +11,7 @@ $stmt->execute([$user_id]);
 $wizard_completed = $stmt->fetchColumn();
 
 if ($wizard_completed === 1) {
-    header("Location: index.php");
+    header("Location: dashboard.php");
     exit();
 }
 
@@ -322,7 +322,7 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(res) {
                 if (res.success) {
-                    window.location.href = 'index.php?msg=Welcome! Your account is perfectly configured.';
+                    window.location.href = 'dashboard.php?msg=Welcome! Your account is perfectly configured.';
                 } else {
                     alert(res.error);
                     btn.prop('disabled', false).html('Complete Setup <i class="fas fa-check-circle ms-2"></i>');

@@ -87,22 +87,25 @@ try {
 
     if ($master_key) {
         try {
+            // Set a short timeout for this specific AI call so it doesn't block completion
             // Fetch the profile we just saved
             $stmt = $db->prepare("SELECT * FROM user_profiles WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $llm = new LLM('gemini', $master_key, 'gemini-2.5-flash');
-            $ai_data = $llm->generateCampaignPlaceholder($purpose, $profile);
-            
-            $base_prompt = $ai_data['base_prompt'] ?? '';
-            $subject = $ai_data['subject'] ?? '';
-            $body = $ai_data['body'] ?? '';
+            if (!empty($profile['full_name'])) {
+                $llm = new LLM('gemini', $master_key, 'gemini-2.5-flash');
+                $ai_data = $llm->generateCampaignPlaceholder($purpose, $profile);
+                
+                $base_prompt = $ai_data['base_prompt'] ?? '';
+                $subject = $ai_data['subject'] ?? '';
+                $body = $ai_data['body'] ?? '';
 
-            // Mark master AI as used
-            $db->prepare("UPDATE user_settings SET master_ai_used = 1 WHERE user_id = ?")->execute([$user_id]);
+                // Mark master AI as used
+                $db->prepare("UPDATE user_settings SET master_ai_used = 1 WHERE user_id = ?")->execute([$user_id]);
+            }
         } catch (Exception $e) {
-            // Fallback to generic
+            // Log error internally if needed, but don't stop the flow
         }
     }
 

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (Auth::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         $openai_key = $_POST['openai_api_key'] ?? '';
         $gemini_key = $_POST['gemini_api_key'] ?? '';
-        $preferred_llm = $_POST['preferred_llm'] ?? 'openai';
+        $preferred_llm = $_POST['preferred_llm'] ?? 'gemini';
         $smtp_host = $_POST['smtp_host'] ?? '';
         $smtp_port = (int)($_POST['smtp_port'] ?? 587);
         $smtp_user = $_POST['smtp_user'] ?? '';
@@ -132,8 +132,8 @@ $csrf_token = Auth::generateCSRFToken();
                     <div class="col-md-6">
                         <label class="form-label">Default Generation Model</label>
                         <select name="preferred_llm" class="form-select">
+                            <option value="gemini" <?php echo ($settings['preferred_llm'] ?? 'gemini') === 'gemini' ? 'selected' : ''; ?>>Gemini (2.5 Flash)</option>
                             <option value="openai" <?php echo ($settings['preferred_llm'] ?? '') === 'openai' ? 'selected' : ''; ?>>OpenAI (GPT-5)</option>
-                            <option value="gemini" <?php echo ($settings['preferred_llm'] ?? '') === 'gemini' ? 'selected' : ''; ?>>Gemini (2.5 Flash)</option>
                         </select>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ $csrf_token = Auth::generateCSRFToken();
                     <div class="col-md-6">
                         <label class="form-label d-block">Bulk AI Generation</label>
                         <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" name="ai_enabled" id="ai_enabled" style="width: 3rem; height: 1.5rem;" <?php echo ($settings['ai_enabled'] ?? 1) ? 'checked' : ''; ?>>
+                            <input class="form-check-input" type="checkbox" name="ai_enabled" id="ai_enabled" style="width: 3rem; height: 1.5rem;" <?php echo ($settings['ai_enabled'] ?? 0) ? 'checked' : ''; ?>>
                             <label class="form-check-label ms-2 pt-1 fw-500" for="ai_enabled">Enable AI for automated queue</label>
                         </div>
                     </div>

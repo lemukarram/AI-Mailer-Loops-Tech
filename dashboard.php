@@ -29,7 +29,7 @@ $queue_status = $stmt->fetchColumn() ?: 'stopped';
 $stmt = $db->prepare("SELECT wizard_completed, purpose FROM user_settings WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $user_settings = $stmt->fetch(PDO::FETCH_ASSOC);
-$wizard_completed = $user_settings['wizard_completed'] ?? 0;
+$wizard_completed = (int)($user_settings['wizard_completed'] ?? 0);
 $purpose = $user_settings['purpose'] ?? 'job_hunt';
 
 if ($wizard_completed === 0) {

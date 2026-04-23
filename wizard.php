@@ -189,15 +189,15 @@ $csrf_token = Auth::generateCSRFToken();
                             <label class="form-check-label fw-bold fs-5">AI Email Generator</label>
                             <p class="small text-muted mb-0">Automatically write hyper-personalized emails for every contact.</p>
                         </div>
-                        <input class="form-check-input" type="checkbox" name="ai_enabled" id="aiToggle" checked style="width: 50px; height: 26px;">
+                        <input class="form-check-input" type="checkbox" name="ai_enabled" id="aiToggle" style="width: 50px; height: 26px;">
                     </div>
                     
-                    <div id="aiOptions" class="mt-4">
+                    <div id="aiOptions" class="mt-4" style="display: none;">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Preferred Model</label>
                                 <select name="preferred_llm" class="form-select rounded-4 p-3 border-0 bg-white shadow-sm">
-                                    <option value="gemini">Google Gemini 1.5 Pro</option>
+                                    <option value="gemini" selected>Google Gemini 1.5 Pro</option>
                                     <option value="openai">OpenAI GPT-4o</option>
                                 </select>
                             </div>
@@ -298,6 +298,9 @@ $(document).ready(function() {
     // AI Toggle
     $('#aiToggle').on('change', function() {
         $('#aiOptions').slideToggle(this.checked);
+        if (this.checked) {
+            $('select[name="preferred_llm"]').val('gemini');
+        }
     });
 
     // Limit Range
@@ -322,7 +325,9 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(res) {
                 if (res.success) {
-                    window.location.href = 'dashboard.php?msg=Welcome! Your account is perfectly configured.';
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.php?msg=Welcome! Your account is perfectly configured.';
+                    }, 500);
                 } else {
                     alert(res.error);
                     btn.prop('disabled', false).html('Complete Setup <i class="fas fa-check-circle ms-2"></i>');

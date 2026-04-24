@@ -116,12 +116,15 @@ class LLM {
     private function callGemini($systemContext, $userPrompt) {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/" . $this->model . ":generateContent?key=" . $this->apiKey;
         
-        // Get domain for referer restriction bypass
-        $referer = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+        // Get base domain for referer
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+        $baseUrl = $protocol . "://" . $host;
 
         $headers = [
             "Content-Type: application/json",
-            "Referer: " . $referer
+            "Referer: " . $baseUrl . "/",
+            "Origin: " . $baseUrl
         ];
         
         $data = [

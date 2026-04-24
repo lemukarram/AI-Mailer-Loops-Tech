@@ -5,7 +5,12 @@ require_once __DIR__ . '/../src/Crypto.php';
 require_once __DIR__ . '/../src/LLM.php';
 
 Auth::requireLogin();
-$user_id = Auth::getUserId();
+$user_id = (int)Auth::getUserId();
+
+if ($user_id <= 0) {
+    echo json_encode(['success' => false, 'error' => 'Invalid user session. Please log in again.']);
+    exit();
+}
 
 if (!Auth::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);

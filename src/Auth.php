@@ -20,7 +20,7 @@ class Auth {
             if ($user['status'] !== 'active') {
                 return "Account is inactive. Please contact the administrator.";
             }
-            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_id'] = (int)$user['id'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_role'] = $user['role'];
             return true;
@@ -44,6 +44,17 @@ class Auth {
             header("Location: login.php");
             exit();
         }
+        
+        // Final sanity check: Does this user actually exist in the DB?
+        $user_id = self::getUserId();
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT id FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        if (!$stmt->fetch()) {
+            self::logout();
+            header("Location: login.php?error=Session expired or invalid user.");
+            exit();
+        }
     }
 
     public static function requireAdmin() {
@@ -55,7 +66,7 @@ class Auth {
 
     public static function getUserId() {
         self::startSession();
-        return $_SESSION['user_id'] ?? null;
+        return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
     }
 
     public static function generateCSRFToken() {

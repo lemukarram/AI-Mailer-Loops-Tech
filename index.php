@@ -199,7 +199,7 @@ $is_logged_in = isset($_SESSION['user_id']);
         <div class="container">
             <div class="section-title animate__animated animate__fadeInUp">
                 <h2 class="text-white">How AI Mailer Works</h2>
-                <p class="text-muted" style="color:white;">Launch your first highly-targeted campaign in under 5 minutes.</p>
+                <p class="text-muted" style="color:#fff !important;">Launch your first highly-targeted campaign in under 5 minutes.</p>
             </div>
             <div class="row position-relative">
                 <!-- Connecting Line -->

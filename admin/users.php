@@ -87,6 +87,54 @@ $csrf_token = Auth::generateCSRFToken();
             <span class="badge bg-dark rounded-pill px-3 py-2">Master Admin</span>
         </div>
 
+        <!-- Platform Stats Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="glass-card bg-primary text-white p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-white text-opacity-75 mb-1 small fw-bold text-uppercase">Total Users</p>
+                            <h2 class="mb-0 fw-bold"><?php echo number_format($platform_stats['total_users']); ?></h2>
+                        </div>
+                        <i class="fas fa-users fs-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card bg-success text-white p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-white text-opacity-75 mb-1 small fw-bold text-uppercase">Platform Sent</p>
+                            <h2 class="mb-0 fw-bold"><?php echo number_format($platform_stats['total_sent']); ?></h2>
+                        </div>
+                        <i class="fas fa-paper-plane fs-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card bg-danger text-white p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-white text-opacity-75 mb-1 small fw-bold text-uppercase">Platform Failed</p>
+                            <h2 class="mb-0 fw-bold"><?php echo number_format($platform_stats['total_failed']); ?></h2>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fs-4"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card bg-warning text-white p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-white text-opacity-75 mb-1 small fw-bold text-uppercase">Total Queue</p>
+                            <h2 class="mb-0 fw-bold"><?php echo number_format($platform_stats['total_queue']); ?></h2>
+                        </div>
+                        <i class="fas fa-clock fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php if($message): ?><div class="alert alert-success border-0 rounded-4 shadow-sm mb-4"><?php echo $message; ?></div><?php endif; ?>
 
         <div class="row g-4">
@@ -120,17 +168,53 @@ $csrf_token = Auth::generateCSRFToken();
 
             <div class="col-lg-8">
                 <div class="glass-card p-0 overflow-hidden">
-                    <div class="p-4 border-bottom bg-light bg-opacity-50 d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold m-0"><i class="fas fa-users me-2"></i>User Management</h6>
-                        <div id="bulkActions" class="d-none animate__animated animate__fadeIn">
-                            <div class="d-flex gap-2">
-                                <select id="bulkActionSelect" class="form-select form-select-sm" style="width: auto;">
-                                    <option value="">Bulk Actions...</option>
-                                    <option value="active">Set Active</option>
-                                    <option value="inactive">Set Inactive</option>
-                                    <option value="delete">Delete Selected</option>
+                    <div class="p-4 border-bottom bg-light bg-opacity-50">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold m-0"><i class="fas fa-users me-2"></i>User Management</h6>
+                            <div id="bulkActions" class="d-none animate__animated animate__fadeIn">
+                                <div class="d-flex gap-2">
+                                    <select id="bulkActionSelect" class="form-select form-select-sm" style="width: auto;">
+                                        <option value="">Bulk Actions...</option>
+                                        <option value="active">Set Active</option>
+                                        <option value="inactive">Set Inactive</option>
+                                        <option value="delete">Delete Selected</option>
+                                    </select>
+                                    <button id="applyBulkAction" class="btn btn-primary btn-sm px-3">Apply</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Filters -->
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <select id="filterStatus" class="form-select form-select-sm">
+                                    <option value="">All Statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                 </select>
-                                <button id="applyBulkAction" class="btn btn-primary btn-sm px-3">Apply</button>
+                            </div>
+                            <div class="col-md-3">
+                                <select id="filterPurpose" class="form-select form-select-sm">
+                                    <option value="">All Purposes</option>
+                                    <option value="job_hunt">Job Seekers</option>
+                                    <option value="business_leads">Business Leads</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filterResume" class="form-select form-select-sm">
+                                    <option value="">Resume?</option>
+                                    <option value="yes">Uploaded</option>
+                                    <option value="no">Missing</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filterPhone" class="form-select form-select-sm">
+                                    <option value="">Phone?</option>
+                                    <option value="yes">Set</option>
+                                    <option value="no">Not Set</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button id="resetFilters" class="btn btn-outline-secondary btn-sm w-100">Reset</button>
                             </div>
                         </div>
                     </div>
@@ -139,7 +223,9 @@ $csrf_token = Auth::generateCSRFToken();
                             <thead>
                                 <tr>
                                     <th style="width: 40px;"><input type="checkbox" id="selectAll" class="form-check-input"></th>
-                                    <th>Account</th>
+                                    <th>Account & Details</th>
+                                    <th>Stats (Sent/Fail/Queue)</th>
+                                    <th>Contacts</th>
                                     <th>Role</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
@@ -185,7 +271,35 @@ $(document).ready(function() {
                 data: 'email',
                 render: function(data, type, row) {
                     const date = new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    return `<div class="fw-bold">${data}</div><small class="text-muted">Joined ${date}</small>`;
+                    let badges = '';
+                    if (row.purpose === 'job_hunt') badges += '<span class="badge bg-info-subtle text-info me-1">Job Seeker</span>';
+                    if (row.purpose === 'business_leads') badges += '<span class="badge bg-primary-subtle text-primary me-1">Lead Gen</span>';
+                    if (row.resume_path) badges += '<span class="badge bg-success-subtle text-success me-1"><i class="fas fa-file-pdf"></i> Resume</span>';
+                    if (row.phone) badges += `<span class="badge bg-warning-subtle text-warning me-1"><i class="fas fa-phone"></i> ${row.phone}</span>`;
+                    
+                    return `
+                        <div class="fw-bold">${data}</div>
+                        <div class="small text-muted mb-1">Joined ${date}</div>
+                        <div class="d-flex flex-wrap gap-1">${badges}</div>
+                    `;
+                }
+            },
+            {
+                data: null,
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex flex-column">
+                            <span class="text-success small"><i class="fas fa-check-circle me-1"></i> ${row.sent_count} Sent</span>
+                            <span class="text-danger small"><i class="fas fa-times-circle me-1"></i> ${row.failed_count} Failed</span>
+                            <span class="text-warning small"><i class="fas fa-clock me-1"></i> ${row.queue_count} Queue</span>
+                        </div>
+                    `;
+                }
+            },
+            {
+                data: 'total_contacts',
+                render: function(data) {
+                    return `<div class="fw-bold text-dark">${data}</div><small class="text-muted">Contacts</small>`;
                 }
             },
             { 
@@ -220,6 +334,37 @@ $(document).ready(function() {
             paginate: { next: '<i class="fas fa-chevron-right"></i>', previous: '<i class="fas fa-chevron-left"></i>' }
         },
         dom: '<"d-flex justify-content-between align-items-center mb-3"f>rt<"d-flex justify-content-between align-items-center mt-3"ip>',
+    });
+
+    // Custom filtering
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        const row = table.row(dataIndex).data();
+        
+        const filterStatus = $('#filterStatus').val();
+        if (filterStatus && row.status !== filterStatus) return false;
+
+        const filterPurpose = $('#filterPurpose').val();
+        if (filterPurpose && row.purpose !== filterPurpose) return false;
+
+        const filterResume = $('#filterResume').val();
+        if (filterResume === 'yes' && !row.resume_path) return false;
+        if (filterResume === 'no' && row.resume_path) return false;
+
+        const filterPhone = $('#filterPhone').val();
+        if (filterPhone === 'yes' && !row.phone) return false;
+        if (filterPhone === 'no' && row.phone) return false;
+
+        return true;
+    });
+
+    // Filter event listeners
+    $('#filterStatus, #filterPurpose, #filterResume, #filterPhone').on('change', function() {
+        table.draw();
+    });
+
+    $('#resetFilters').on('click', function() {
+        $('#filterStatus, #filterPurpose, #filterResume, #filterPhone').val('');
+        table.draw();
     });
 
     // Select All

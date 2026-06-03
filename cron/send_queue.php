@@ -60,6 +60,15 @@ foreach ($users_to_process as $user_settings) {
         continue;
     }
 
+    // Get user full name for attachment
+    $stmt = $db->prepare("SELECT full_name FROM user_profiles WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $user_profile = $stmt->fetch(PDO::FETCH_ASSOC);
+    $attachmentName = null;
+    if ($user_profile && !empty($user_profile['full_name'])) {
+        $attachmentName = str_replace(' ', '', ucwords(preg_replace('/[^a-zA-Z0-9 ]/', '', $user_profile['full_name'])));
+    }
+
     try {
         // Decrypt SMTP password
         $smtp_pass = Crypto::decrypt($user_settings['smtp_pass']);
@@ -92,7 +101,7 @@ foreach ($users_to_process as $user_settings) {
             }
 
             $attachment = !empty($campaign['attachment_path']) ? __DIR__ . '/../' . $campaign['attachment_path'] : null;
-            $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment);
+            $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment, $attachmentName);
             
             if ($sent) {
                 $db->prepare("UPDATE mailing_list SET status = 'sent', last_sent_at = NOW() WHERE id = ?")->execute([$contact['id']]);

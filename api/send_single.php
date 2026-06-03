@@ -52,7 +52,16 @@ try {
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     $attachment = ($campaign && !empty($campaign['attachment_path'])) ? __DIR__ . '/../' . $campaign['attachment_path'] : null;
 
-    $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment);
+    // Get user full name for attachment
+    $stmt = $db->prepare("SELECT full_name FROM user_profiles WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $user_profile = $stmt->fetch(PDO::FETCH_ASSOC);
+    $attachmentName = null;
+    if ($user_profile && !empty($user_profile['full_name'])) {
+        $attachmentName = str_replace(' ', '', ucwords(preg_replace('/[^a-zA-Z0-9 ]/', '', $user_profile['full_name'])));
+    }
+
+    $sent = $mailer->send($contact['email'], $subject, $body, $footer, $attachment, $attachmentName);
 
     if ($sent) {
         $stmt = $db->prepare("UPDATE mailing_list SET status = 'sent', last_sent_at = NOW() WHERE id = ?");

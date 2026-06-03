@@ -17,7 +17,7 @@ class Mailer {
      * Robust SMTP sender using native PHP sockets.
      * Supports attachments and multipart/mixed content.
      */
-    public function send($to, $subject, $body, $footer = '', $attachmentPath = null) {
+    public function send($to, $subject, $body, $footer = '', $attachmentPath = null, $attachmentName = null) {
         // AI might return [BR] for line breaks in footer, convert to real newlines
         $footer = str_replace(['[BR]', '[br]'], "\n", $footer);
         
@@ -43,7 +43,13 @@ class Mailer {
 
         // Handle Attachment
         if ($attachmentPath && file_exists($attachmentPath)) {
-            $filename = basename($attachmentPath);
+            if ($attachmentName) {
+                $extension = pathinfo($attachmentPath, PATHINFO_EXTENSION);
+                $filename = $attachmentName . ($extension ? '.' . $extension : '');
+            } else {
+                $filename = basename($attachmentPath);
+            }
+            
             $fileSize = filesize($attachmentPath);
             $handle = fopen($attachmentPath, "r");
             $content = fread($handle, $fileSize);
